@@ -7,6 +7,7 @@ import * as React from 'react'
 import styles from './styles.css'
 
 export type Props = { text: string }
+export * from './index.export'
 
 export default class ExampleComponent extends React.Component<Props> {
   render() {

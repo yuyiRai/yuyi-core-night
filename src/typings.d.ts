@@ -15,3 +15,11 @@ declare module '*.svg' {
   export default svgUrl;
   export { svgComponent as ReactComponent }
 }
+
+
+declare module 'amap-js'{
+  const group: {
+    [key: string]: any;
+  }
+  export default group
+}
