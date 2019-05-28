@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/yuyi-core-night/static/css/main.a2b7b0b6.chunk.css",
-    "main.js": "/yuyi-core-night/static/js/main.2ca7b49d.chunk.js",
-    "main.js.map": "/yuyi-core-night/static/js/main.2ca7b49d.chunk.js.map",
-    "runtime~main.js": "/yuyi-core-night/static/js/runtime~main.0210b92e.js",
-    "runtime~main.js.map": "/yuyi-core-night/static/js/runtime~main.0210b92e.js.map",
-    "static/js/2.48a9174b.chunk.js": "/yuyi-core-night/static/js/2.48a9174b.chunk.js",
-    "static/js/2.48a9174b.chunk.js.map": "/yuyi-core-night/static/js/2.48a9174b.chunk.js.map",
-    "index.html": "/yuyi-core-night/index.html",
-    "precache-manifest.a3f893c77194469fcb174ea2bcc5bfe8.js": "/yuyi-core-night/precache-manifest.a3f893c77194469fcb174ea2bcc5bfe8.js",
-    "service-worker.js": "/yuyi-core-night/service-worker.js",
-    "static/css/main.a2b7b0b6.chunk.css.map": "/yuyi-core-night/static/css/main.a2b7b0b6.chunk.css.map"
+    "main.css": "/static/css/main.a2b7b0b6.chunk.css",
+    "main.js": "/static/js/main.d7aa34db.chunk.js",
+    "main.js.map": "/static/js/main.d7aa34db.chunk.js.map",
+    "runtime~main.js": "/static/js/runtime~main.a8a9905a.js",
+    "runtime~main.js.map": "/static/js/runtime~main.a8a9905a.js.map",
+    "static/js/2.48a9174b.chunk.js": "/static/js/2.48a9174b.chunk.js",
+    "static/js/2.48a9174b.chunk.js.map": "/static/js/2.48a9174b.chunk.js.map",
+    "index.html": "/index.html",
+    "precache-manifest.75c727e2b809cf6a4f650a07de20dcc5.js": "/precache-manifest.75c727e2b809cf6a4f650a07de20dcc5.js",
+    "service-worker.js": "/service-worker.js",
+    "static/css/main.a2b7b0b6.chunk.css.map": "/static/css/main.a2b7b0b6.chunk.css.map"
   }
 }
