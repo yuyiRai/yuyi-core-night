@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/yuyi-core-night/static/css/main.a2b7b0b6.chunk.css",
-    "main.js": "/yuyi-core-night/static/js/main.2ca7b49d.chunk.js",
-    "main.js.map": "/yuyi-core-night/static/js/main.2ca7b49d.chunk.js.map",
+    "main.js": "/yuyi-core-night/static/js/main.04659a0c.chunk.js",
+    "main.js.map": "/yuyi-core-night/static/js/main.04659a0c.chunk.js.map",
     "runtime~main.js": "/yuyi-core-night/static/js/runtime~main.0210b92e.js",
     "runtime~main.js.map": "/yuyi-core-night/static/js/runtime~main.0210b92e.js.map",
-    "static/js/2.48a9174b.chunk.js": "/yuyi-core-night/static/js/2.48a9174b.chunk.js",
-    "static/js/2.48a9174b.chunk.js.map": "/yuyi-core-night/static/js/2.48a9174b.chunk.js.map",
+    "static/js/2.3a324435.chunk.js": "/yuyi-core-night/static/js/2.3a324435.chunk.js",
+    "static/js/2.3a324435.chunk.js.map": "/yuyi-core-night/static/js/2.3a324435.chunk.js.map",
     "index.html": "/yuyi-core-night/index.html",
-    "precache-manifest.b43b572df4bc1f9c9ac92cd375ac78f6.js": "/yuyi-core-night/precache-manifest.b43b572df4bc1f9c9ac92cd375ac78f6.js",
+    "precache-manifest.a431e233995542a2d5c9de12515fd5db.js": "/yuyi-core-night/precache-manifest.a431e233995542a2d5c9de12515fd5db.js",
     "service-worker.js": "/yuyi-core-night/service-worker.js",
     "static/css/main.a2b7b0b6.chunk.css.map": "/yuyi-core-night/static/css/main.a2b7b0b6.chunk.css.map"
   }

@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/yuyi-core-night/precache-manifest.b43b572df4bc1f9c9ac92cd375ac78f6.js"
+  "/yuyi-core-night/precache-manifest.a431e233995542a2d5c9de12515fd5db.js"
 );
 
 self.addEventListener('message', (event) => {
