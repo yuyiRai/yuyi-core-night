@@ -1,6 +1,6 @@
 import * as React from 'react'
 import UploadMessage, { UploadProgressStore } from './UploadMessage'
-import { $notify } from '../../utils';
+import { $notify } from '@/utils';
 
 export function showUploadMessage(instance: any, file: any, store: UploadProgressStore) {
   return $notify({
