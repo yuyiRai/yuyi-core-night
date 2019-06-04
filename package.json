@@ -1,6 +1,6 @@
 {
   "name": "yuyi-core-night",
-  "version": "1.0.70",
+  "version": "1.0.71",
   "description": "",
   "author": "yuyiRai",
   "license": "MIT",
@@ -22,6 +22,11 @@
     "npm": ">=5"
   },
   "scripts": {
+    "docs": "yuyidocs ../.",
+    "docs:full": "yuyidocs ../. -i",
+    "docs:watch": "yuyidocs ../. -w",
+    "predeploy-docs": "yarn run docs:full",
+    "deploy-docs": "gh-pages -d docs",
     "dev": "ttsc --project tsconfig.json --watch",
     "test": "cross-env CI=1 react-scripts-ts test --env=jsdom",
     "test:watch": "react-scripts-ts test --env=jsdom",
@@ -97,8 +102,8 @@
     "typescript-plugin-styled-components": "^1.4.2",
     "typescript-transform-paths": "^1.1.0",
     "vue": "^2.6.10",
-    "yuyi-core-env": "^2.0.28",
-    "yuyi-core-utils": "^0.1.46"
+    "yuyi-core-env": "^2.0.29",
+    "yuyi-core-utils": "^0.1.47"
   },
   "files": [
     "dist"

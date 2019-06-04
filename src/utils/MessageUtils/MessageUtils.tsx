@@ -2,7 +2,7 @@ import { Message } from 'element-ui';
 import 'element-ui/lib/theme-chalk/message.css';
 // import 'element-theme-default/lib/message.css'
 import { assign, concat, join, reduce } from 'lodash';
-import Utils from "@/utils";
+import Utils from "yuyi-core-utils";
 
 export interface IMessageConfig<T = any> {
   msg?: T;
