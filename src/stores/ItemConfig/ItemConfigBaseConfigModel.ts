@@ -5,7 +5,7 @@ import { autobind, override } from 'core-decorators';
 import { get } from 'lodash';
 import { action, computed, IKeyValueMap, observable, toJS } from 'mobx';
 import { createTransformer, createViewModel, IViewModel } from 'mobx-utils';
-import { CommonStore } from "./interface/CommonStore";
+import { CommonStore } from "../CommonStore";
 import { IFormItemConstructor } from './interface/ItemConfig';
 import { IPropertyChangeEvent } from './ItemConfigBase';
 
@@ -126,7 +126,7 @@ export class ItemConfigBaseConfigModel<V, FM> extends CommonStore {
   @override
   @autobind
   public export(): ExportedFormModel<IFormItemConstructor<FM>> {
-    return ItemConfigBaseConfigModel.export<FM>(this)
+    return ItemConfigBaseConfigModel.export(this)
   }
 
   public static export = createTransformer(<FM>(config: ItemConfigBaseConfigModel<any, FM>): ExportedFormModel<IFormItemConstructor<FM>> => {

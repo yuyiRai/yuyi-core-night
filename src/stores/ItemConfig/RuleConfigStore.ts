@@ -6,7 +6,7 @@ import { FormStoreCore } from '@/stores/FormStore/FormStoreCore';
 import { Utils } from '@/utils';
 import { getDefaultRules } from './input/Date';
 import { IItemConfig } from "./interface";
-import { CommonStore } from "./interface/CommonStore";
+import { CommonStore } from "../CommonStore";
 import { IRuleConfig, IValidator, RuleConfigConstructor, RuleConfigMap, RuleList, ValidatorCallback } from './interface/RuleConfig';
 
 export const keyByRule = keys<IRuleStoreBase<any,any>>()

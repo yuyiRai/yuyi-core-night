@@ -5,11 +5,11 @@ import { get, toString } from 'lodash';
 import { action, computed, IArraySplice, IObservableArray, IReactionDisposer, observable, reaction } from "mobx";
 import { Option, OptionBase, Utils } from "@/utils";
 import { IItemConfig, ItemConfigEventHandler } from "./interface";
-import { CommonStore } from "./interface/CommonStore";
+import { CommonStore } from "../CommonStore";
 
 export type KeyString = string;
 export interface ISearchConfigBase<FM> {
-  remoteMethod?: ItemConfigEventHandler<KeyString, Promise<OptionBase[]>>;
+  remoteMethod?: ItemConfigEventHandler<KeyString, FM, Promise<OptionBase[]>>;
   allowCreate?: boolean | ItemConfigEventHandler<KeyString, FM, Option>
   multiple?: boolean;
   loadDataDeep?: number;

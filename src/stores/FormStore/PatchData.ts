@@ -1,4 +1,4 @@
-import { FormModel } from "../../components/Form/Interface";
+import { FormModel } from "../ItemConfig";
 
 export type PatchData<T=FormModel> = {
   name: keyof T;

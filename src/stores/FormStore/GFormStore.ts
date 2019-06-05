@@ -1,4 +1,4 @@
-import { CommonStore } from '@/stores/ItemConfig/interface/CommonStore';
+import { CommonStore } from '../CommonStore';
 import { FormStore } from './FormStore';
 export class GFormStore extends CommonStore {
   static formMap: WeakMap<any, FormStore<any, any>> = new WeakMap<any, FormStore<any, any>>();

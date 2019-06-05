@@ -17,7 +17,7 @@ export const ExportUtils = {
   })
 }
 
-export abstract class CommonStore<M extends CommonStore = any> extends EventStoreProvider {
+export abstract class CommonStore<M = any> extends EventStoreProvider {
   @observable private destorySet: Set<IReactionDisposer | Lambda> = new Set<IReactionDisposer | Lambda>();
   @action.bound public reaction(source: (r: IReactionPublic) => {}, callback: (arg: {}, r: IReactionPublic) => void, options?: IReactionOptions): IReactionDisposer {
     return this.registerDisposer(reaction(source, callback, options))

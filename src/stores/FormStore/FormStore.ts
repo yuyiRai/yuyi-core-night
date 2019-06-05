@@ -1,13 +1,12 @@
-import { IFormValueTransform, ItemConfig } from '@/stores';
-import getTransform, { TransformerType } from '@/stores/ItemConfig/input/FormValueTransform';
-import { Utils } from '@/utils';
-import { EventEmitter } from '@/utils';
+import { IFormValueTransform, ItemConfig } from '../ItemConfig';
+import getTransform, { TransformerType } from '../ItemConfig/input/FormValueTransform';
+import { EventEmitter, Utils } from 'yuyi-core-utils';
 import { WrappedFormUtils } from 'antd/lib/form/Form';
 import { autobind } from 'core-decorators';
 import produce from 'immer';
 import { get, set } from 'lodash';
 import { action, computed, IKeyValueMap, IMapDidChange, observable, ObservableMap } from 'mobx';
-import { FormModel, IFormItemConstructor } from '../../components/Form/Interface/FormItem';
+import { FormModel, IFormItemConstructor } from '../ItemConfig';
 import { IFormItemStoreCore } from "./FormItemStoreBase";
 import { FormStoreCore } from './FormStoreCore';
 import { PatchDataTree } from './PatchData';

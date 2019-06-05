@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "downlevelIteration": true,
-    "forceConsistentCasingInFileNames": false,
+    "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": false,
     "noImplicitThis": false,
     "noImplicitAny": false,

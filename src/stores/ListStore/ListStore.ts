@@ -3,10 +3,9 @@ import { autobind } from 'core-decorators';
 import produce, { Draft } from 'immer';
 import { action, computed, get, IObservableArray, IReactionDisposer, Lambda, observable, set, toJS } from 'mobx';
 import { createTransformer, ITransformer } from 'mobx-utils';
-import { CommonStore } from '../ItemConfig/interface';
+import { CommonStore } from '../CommonStore';
 
 
-type ChangeResponse<T> = [T, number]
 export class List<T = any, TT = T> extends CommonStore {
   @observable.shallow
   private originalList: IObservableArray<T>;
@@ -16,8 +15,6 @@ export class List<T = any, TT = T> extends CommonStore {
 
   @observable
   private customTransformer: ITransformer<T, TT>;
-  @observable
-  public model = {};
 
   private keyList = []
   @observable.ref private strict = false
@@ -38,7 +35,7 @@ export class List<T = any, TT = T> extends CommonStore {
    * @param response 
    */
   @autobind
-  public onChangeResponse([orginItem, index]: ChangeResponse<T>): boolean {
+  public onChangeResponse([orginItem, index]: [T, number]): boolean {
     // console.log('onChangeResponse', index)
     if (!Utils.isEqual(this.lastSnapshots[index], orginItem, true)) {
       this.onArrayChangeHandler('item change', index, orginItem, this.lastSnapshots[index]);
@@ -169,7 +166,7 @@ export class List<T = any, TT = T> extends CommonStore {
    * 取对应下标值（纯净值）
    * @param index 
    */
-  public getValue(index: number, defaultValue?: TT, originalDefaultType: boolean = true) {
+  public getValue(index: number, defaultValue?: TT, originalDefaultType: boolean = true): TT {
     return toJS(this.get(index, defaultValue, originalDefaultType))
   }
 
@@ -203,11 +200,11 @@ export class List<T = any, TT = T> extends CommonStore {
    * @param index 
    * @param defaultValue 为null|undefined时提供默认值
    */
-  public getOriginalValue(index: number, defaultValue?: T) {
+  public getOriginalValue(index: number, defaultValue?: T): T {
     return toJS(this.getOriginal(index, defaultValue))
   }
 
-  @autobind onArrayChangeHandler(key: string, ...args: any[]) {
+  @autobind onArrayChangeHandler(key: string, ...args: any[]): void {
     console.log(key, ...args)
     this.onArrayChange && this.onArrayChange();
   }

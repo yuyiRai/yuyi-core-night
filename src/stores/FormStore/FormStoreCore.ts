@@ -1,14 +1,13 @@
+import { isNotEmptyArray, Utils } from '@/utils';
 import { autobind } from 'core-decorators';
-import { action, computed, IKeyValueMap, IMapDidChange, observable, ObservableMap, runInAction, Lambda } from 'mobx';
-import { EventStoreInject } from '@/stores/EventStore';
-import { unset } from 'lodash'
-import { isNotEmptyArray } from '@/utils';
-import { FormModel } from '../../components/Form/Interface/FormItem';
+import produce from 'immer';
+import { unset } from 'lodash';
+import { action, computed, IKeyValueMap, IMapDidChange, Lambda, observable, ObservableMap, runInAction } from 'mobx';
+import { EventStoreInject } from '../EventStore';
+import { FormModel } from '../ItemConfig';
 import { IFormItemStoreCore } from "./FormItemStoreBase";
 import { GFormStore } from './GFormStore';
-import { Utils } from '@/utils';
 import { ConfigInit, ItemConfigGroupStore } from './ItemConfigGroupStore';
-import produce from 'immer';
 
 export type onItemChangeCallback = (code: string, value: any) => void
 

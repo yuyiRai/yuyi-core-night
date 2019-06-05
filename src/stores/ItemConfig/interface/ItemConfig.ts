@@ -1,3 +1,7 @@
+/**
+ * @module ItemConfig
+ */
+
 import { IEventStoreBase } from "@/stores/EventStore";
 import { IKeyValueMap } from "mobx";
 import { ITransformer } from "mobx-utils";
@@ -7,39 +11,56 @@ import { FilterType, IFormValueTransform, IFormValueTransformHandler, FilterType
 import { IDisplayConfig, IDisplayConfigCreater } from "../ItemDisplayConfig";
 import { IRuleStore, IRuleStoreCreater } from "../RuleConfigStore";
 import { ISearchConfig, ISearchConfigCreater } from "../SearchStore";
-import { CommonStore } from "./CommonStore";
+import { CommonStore } from "../../CommonStore";
 import { IRuleConfig } from "./RuleConfig";
 
-export interface INameKeyComponent<K extends FormItemType> {
-  $nameKey: K;
+export interface FormItemTypeDescription {
+  "text": "文本录入域",
+  "textArea": "文本域",
+  "textarea": "文本域",
+  "number": "数值录入域",
+  "date": "日期选择器",
+  "dateTime": "日期与时间选择器",
+  "dateToDate": "日期区间选择器",
+  "select": "选择器",
+  "search": "查询选择器/自动完成录入域",
+  "selectTree": "树选择",
+  "check": "多选框",
+  "radio": "单选框",
+  "radioOne": "是/否简易单选框",
+  "checkOne": "简易勾选框",
+  "switch": "开关",
+  "cascader": "级联选择器",
+  "group": "复合录入域，通过children键值对组合多个录入域"
 }
-export class A implements INameKeyComponent<"text">{
-  $nameKey: "text" = "text";
-}
 
-export type FormItemTypePublic = "text" | "textArea" | "textarea"
-| 'number'
-| 'date' | 'dateTime' | 'dateToDate'
-| 'select' | 'search' | 'selectTree'
-| 'check' | 'radio' | 'radioOne'
-| 'checkOne' | 'switch' | 'address' | 'cascader' | 'group'
+export type FormItemTypeKeys = keyof FormItemTypeDescription
 
-export type FormItemType = "" | FormItemTypePublic | undefined | null | never
+export type FormItemType = "" | FormItemTypeKeys | undefined | null | never
 
+/**
+ * 表单model
+ */
 export type FormModel<M extends IKeyValueMap = IKeyValueMap> = M
 
 export type ValueType<T = object> = T
 
 /**
- * 属性
+ * 属性构造器
+ * @external
  */
 export type ComputedProperty<FM = FormModel, T = any> = ComputedPropertyCreater<T, FM> | ValueType<T>
 /**
- * 计算属性
+ * 计算属性计算函数
+ * @external
  */
-export type ComputedPropertyCreater<T, FM = FormModel> = (form: FM, itemConfig?: IItemConfig<FM>) => T
+export interface ComputedPropertyCreater<T, FM = FormModel> {
+  (form: FM, itemConfig?: IItemConfig<FM>): T
+}
 
-export type ItemConfigEventHandler<VALUE, FM, R = void> = (e: VALUE, formSource?: FM, config?: IItemConfig<FM, VALUE>) => R;
+export interface ItemConfigEventHandler<VALUE, FM, R = void> {
+  (e: VALUE, formSource?: FM, config?: IItemConfig<FM, VALUE>): R
+};
 export type ValueAny = any;
 
 export type ConstructorPick<P> = {
@@ -48,13 +69,16 @@ export type ConstructorPick<P> = {
 export type ComputedPick<P, FM> = {
   [K in keyof P]?: P[K] extends ComputedPropertyCreater<infer T, FM> ? T : P[K]
 }
-// export type ComputedPick<T, FM> = {
-//   [K in keyof T]?: ComputedProperty<T[K], FM>
-// }
+/**
+ * 将类型成员变成计算属性
+ */
+export type WithComputedPick<T, FM> = {
+  [K in keyof T]?: ComputedProperty<T[K], FM>
+}
 /**
  * 表单成员基本配置，固定类型
  */
-export type IItemConfigStatic<FM, VALUE, CVALUE> = {
+export interface IItemConfigStatic<FM, VALUE, CVALUE> {
   type?: FormItemType;
   code: string | '_';
   nameCode?: string;
@@ -70,7 +94,7 @@ export type IItemConfigStatic<FM, VALUE, CVALUE> = {
   useSlot?: boolean | string
 }
 
-export interface IItemConfigCreater<FM = any, VALUE = any> {
+interface IItemConfigCreater<FM = any, VALUE = any> {
   /**
    * a
    */
@@ -83,13 +107,15 @@ export interface IItemConfigCreater<FM = any, VALUE = any> {
   options?: ComputedPropertyCreater<OptionBase[], FM>;
   loading?: ComputedPropertyCreater<boolean, FM>;
 }
+export interface IItemConfigCreaterStatic<FM, VALUE> extends ConstructorPick<IItemConfigCreater<FM, VALUE>>{}
 
 /**
  * typeof i
+ * @inheritdoc 
  */
 export interface IFormItemConstructor<FM = any, VALUE = any, CVALUE = VALUE> extends
   IItemConfigStatic<FM, VALUE, CVALUE>,
-  ConstructorPick<IItemConfigCreater<FM, VALUE>>,
+  IItemConfigCreaterStatic<FM, VALUE>,
   ConstructorPick<ISearchConfigCreater<VALUE, FM>>,
   ConstructorPick<IDisplayConfigCreater<FM>>,
   ConstructorPick<IRuleStoreCreater<VALUE, FM>> 

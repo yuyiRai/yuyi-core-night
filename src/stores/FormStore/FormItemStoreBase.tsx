@@ -1,6 +1,6 @@
-import { ItemConfig } from '@/stores';
+import { ItemConfig } from '../ItemConfig';
 import { computed, observable } from 'mobx';
-import { CommonStore } from '@/stores/ItemConfig/interface';
+import { CommonStore } from '../CommonStore';
 import { FormStoreCore } from './FormStoreCore';
 import { autobind } from 'core-decorators';
 
