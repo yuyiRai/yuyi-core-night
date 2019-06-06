@@ -9,6 +9,8 @@ build
 dist
 lib
 docs
+docs/**/*.*
+docs/assets/**/*.*
 .rpt2_cache
 
 # misc

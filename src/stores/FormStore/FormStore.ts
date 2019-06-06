@@ -177,9 +177,9 @@ export class FormStore<
       const itemConfig = this.configStore.getItemConfig(pathStr)
       console.log('set', 'formMap', pathStr, value, nextValue, this.formSource, this.formItemStores, itemConfig)
       // this.setFormValueWithName(pathStr)
-      const { onChange } = itemConfig
+      const { onChange } = itemConfig.i
       if (Utils.isFunction(onChange)) {
-        onChange(nextValue)
+        onChange(nextValue, this.formSource, itemConfig)
       }
     }
     return isChanged
