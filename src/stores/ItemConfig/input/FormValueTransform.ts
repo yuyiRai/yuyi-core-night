@@ -73,7 +73,7 @@ export class FormValueTransform<FM extends FormModel, FV = any, CV = any> implem
         return this.dateFormatter(EDateFormatter.date);
       case 'dateToDate':
         return (v: any) => {
-          const [s,e] = Utils.isArrayFilter(v, []).filter((i) => Utils.isNotEmptyValue(i))
+          const [s,e] = Utils.isArrayFilter<string>(v, []).filter((i) => Utils.isNotEmptyValue(i))
           if(Utils.isNotEmptyValue(s) && Utils.isNotEmptyValue(e)){
             return [`${s}${s.length<11?' 00:00:00':''}`, `${s.length<11?parseTime(new Date(new Date(e).setTime(new Date(e+' 00:00:00').getTime()-1))):''}`]
           }

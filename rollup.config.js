@@ -32,10 +32,11 @@ export default {
   },
   output: [
     {
-      dir: path.dirname(pkg.module),
+      dir: path.dirname(pkg.main),
       format: 'es',
       chunkFileNames: '[name].js',
       entryFileNames: '[name].js',
+	    sourcemap: true,
       exports: 'named'
     },
     // {

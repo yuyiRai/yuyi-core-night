@@ -10,6 +10,7 @@ import { InputNumberItem } from './NumberInputItem';
 import { RadioItem, RadioOneItem } from './RadioItem';
 import { SearchItem } from './Search';
 import { SelectTreeItem } from './SelectTreeItem';
+import { CustomItem } from './CustomItem';
 
 // export function ItemSwitchType(type?: 'text' | string): React.FunctionComponent<IInputItemProps>;
 // export function ItemSwitchType(type: 'textArea' | 'textarea'): React.FunctionComponent<ITextAreaItemProps>;
@@ -32,20 +33,21 @@ export const itemType: IItemTypeComponent = {
   'select': SearchItem,
   'cascader': CascaderItem,
   'selectTree': SelectTreeItem,
-  'group': GroupItem
+  'group': GroupItem,
+  'custom': CustomItem
 }
 
 export function ItemSwitchType<T extends FormItemType>(type: T): IItemTypeComponent[T]
 export function ItemSwitchType<T extends FormItemType>(type?: never | ""): IItemTypeComponent['text']
 export function ItemSwitchType(type?: string) {
-  return itemType[type || 'text']
+  return itemType[type] || itemType['text']
 }
 export interface IItemSwitchProps extends OFormItemCommon {
   type: FormItemType;
   [k: string]: any;
 }
 export const ItemSwitch = React.forwardRef(({type, ...props}: IItemSwitchProps, ref) => {
-  const Component = ItemSwitchType(type);
+  const Component = React.useMemo(() => ItemSwitchType(type), [type]);
   return <Component ref={ref} {...props}/>
 })
 

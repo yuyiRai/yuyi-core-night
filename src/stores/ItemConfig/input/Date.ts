@@ -4,7 +4,7 @@ import { IItemConfig, RuleConfigMap } from '../interface';
 
 export const checkDateToDate = <V, FM>(date: any, itemConfig: IItemConfig<FM, V>) => ((rule: any, value: any, callback: any) => {
   console.log('testt, check', value, itemConfig)
-  const [start, end] = Utils.isArrayFilter(value, map(itemConfig.code.split('|'), code => itemConfig.formSource[code]))
+  const [start, end] = Utils.isArrayFilter<string>(value, map(itemConfig.code.split('|'), code => itemConfig.formSource[code]))
   if (!Utils.isNil(start) && !Utils.isNil(end) && itemConfig.type === 'dateToDate') {
     console.log('testt, check', [start, end], itemConfig)
     // console.log(start,end,value)
@@ -24,7 +24,7 @@ export const checkDateToDate = <V, FM>(date: any, itemConfig: IItemConfig<FM, V>
 })
 
 export const checkFutureDate = <V, FM>(itemConfig: IItemConfig<FM, V>) => ((rule: any, value: any, callback: any) => {
-  if (Utils.isNotEmptyValue(value) && new Date().getTime() > new Date(value).getTime()) {
+  if (Utils.isNotEmptyValue(value) && new Date().getTime() > new Date(value+'').getTime()) {
     return callback(new Error(`${itemConfig.label}不能早于当前时间`));
   }
   return callback();

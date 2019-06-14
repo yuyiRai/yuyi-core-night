@@ -1,11 +1,13 @@
-import { react2Vue, slotInjectContainer, Slot } from '../../utils/SlotUtils';
 import { autobind } from 'core-decorators';
 import * as React from 'react';
 import { createGlobalStyle } from 'styled-components';
 import Vue from 'vue';
-import { FormGroup } from './Form';
+import { Utils } from 'yuyi-core-utils';
 import { FormStore } from '../../stores/FormStore';
+import { react2Vue, slotInjectContainer } from '../../utils/SlotUtils';
 import { CommonForm } from './CommonForm';
+import { FormGroup } from './Form';
+
 
 // import Loadable from 'react-loadable';
 
@@ -90,7 +92,7 @@ export class RCommonForm2 extends React.PureComponent<any, any> {
     // console.log('ElCommonForm2', this.context, Inter)
     return (
       <span>
-        <Slot name='w' />
+        {/* <Slot name='w' /> */}
         <GlobalStyle />
         {Utils.isNotEmptyArray(config) &&
           <CommonForm {...other} model={model} onItemChange={this.onChange} storeRef={this.getStoreRef}>

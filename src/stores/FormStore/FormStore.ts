@@ -22,7 +22,7 @@ export type onItemChangeCallback = (code: string, value: any) => void
 export class FormStore<
   FM extends FormModel = any,
   VM extends IFormItemStoreCore<FM, any> = IFormItemStoreCore<FM, any>
-> extends FormStoreCore<FM, VM> {
+  > extends FormStoreCore<FM, VM> {
   public antFormInited: boolean = false;
   constructor(configList?: IFormItemConstructor<any, FM>[]) {
     super()
@@ -48,9 +48,13 @@ export class FormStore<
     // })
   }
 
-
-
   // @Memoize
+  /**
+   * 变更字段值
+   * @param patch 
+   * @param path 
+   * @param callback 
+   */
   @action.bound patchFieldsChange(patch: PatchDataTree<FM>, path: string[] = [], callback?: any): IKeyValueMap<boolean> {
     // console.log('patchFieldsChange', patch, this)
     const result: IKeyValueMap<boolean> = {}
@@ -127,9 +131,13 @@ export class FormStore<
    */
   @action.bound
   public setFormValue(code: string, value: any) {
-    const codeDeep = code.split('.')
-    const key = codeDeep.shift()
-    this.setFormValueBy(value, key, codeDeep.join('.'))
+    if (this.antdForm) {
+      this.antdForm.setFieldsValue(set({}, code, value))
+    } else {
+      const codeDeep = code.split('.')
+      const key = codeDeep.shift()
+      this.setFormValueBy(value, key, codeDeep.join('.'))
+    }
   }
 
   @action.bound
@@ -176,7 +184,7 @@ export class FormStore<
       // debugger
       const itemConfig = this.configStore.getItemConfig(pathStr)
       console.log('set', 'formMap', pathStr, value, nextValue, this.formSource, this.formItemStores, itemConfig)
-      // this.setFormValueWithName(pathStr)
+      this.setFormValueWithName(pathStr)
       const { onChange } = itemConfig.i
       if (Utils.isFunction(onChange)) {
         onChange(nextValue, this.formSource, itemConfig)
@@ -184,10 +192,10 @@ export class FormStore<
     }
     return isChanged
   }
-  // @action.bound setFormValueWithName(code: string) {
-  // const nameCode = this.itemCodeNameMap[code]
-  // set(this.formSource, nameCode, this.getValueWithName(code, nameCode))
-  // }
+  @action.bound setFormValueWithName(code: string) {
+    const nameCode = this.configStore.itemCodeNameMap[code]
+    set(this.formSource, nameCode, this.getValueWithName(code, nameCode))
+  }
 
   @autobind async validate(codeList?: string[]) {
     try {

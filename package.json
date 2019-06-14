@@ -1,6 +1,6 @@
 {
   "name": "yuyi-core-night",
-  "version": "1.0.76",
+  "version": "1.0.77",
   "description": "",
   "author": "yuyiRai",
   "license": "MIT",
@@ -14,8 +14,8 @@
   "sideEffects": false,
   "homepage": "https://github.com/yuyiRai/yuyi-core-night#readme",
   "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
-  "jsnext:main": "dist/esm/index.js",
+  "module": "lib/index.js",
+  "jsnext:main": "lib/index.js",
   "typings": "dist/esm",
   "engines": {
     "node": ">=8",
@@ -102,8 +102,8 @@
     "typescript-plugin-styled-components": "^1.4.2",
     "typescript-transform-paths": "^1.1.0",
     "vue": "^2.6.10",
-    "yuyi-core-env": "^2.0.33",
-    "yuyi-core-utils": "^0.1.51"
+    "yuyi-core-env": "^2.0.34",
+    "yuyi-core-utils": "^0.1.52"
   },
   "files": [
     "dist"

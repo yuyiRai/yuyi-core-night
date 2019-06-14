@@ -1,11 +1,11 @@
+import { Option, OptionBase, Utils } from "@/utils";
 import { autobind } from "core-decorators";
 import produce from "immer";
 import { get, toString } from 'lodash';
 // import { Debounce } from 'lodash-decorators';
 import { action, computed, IArraySplice, IObservableArray, IReactionDisposer, observable, reaction } from "mobx";
-import { Option, OptionBase, Utils } from "@/utils";
-import { IItemConfig, ItemConfigEventHandler } from "./interface";
 import { CommonStore } from "../CommonStore";
+import { IItemConfig, ItemConfigEventHandler } from "./interface";
 
 export type KeyString = string;
 export interface ISearchConfigBase<FM> {
@@ -199,7 +199,7 @@ export class SearchStore<V, FM> extends CommonStore {
       loadedData = await this.itemConfig.loadData(lastItem ? { ...lastItem } : null, dataPath, this.itemConfig.formSource, this.itemConfig);
     }
     if (path !== '') {
-      const optionsList = produce(this.itemConfig.options, optionsList => {
+      const optionsList: OptionBase[] = produce(Utils.cloneDeep(this.itemConfig.options), optionsList => {
         const result = get(optionsList, path)
         if (result) {
           if (Utils.isNotEmptyArray(loadedData)) {
@@ -282,7 +282,7 @@ export class SearchStore<V, FM> extends CommonStore {
     const { i, formSource } = this.itemConfig
     if (Utils.isFunction(i.remoteMethod)) {
       return async (keyWord: string) => {
-        const r = await i.remoteMethod(keyWord, formSource, this.itemConfig)
+        const r = await i.remoteMethod(keyWord, formSource, this.itemConfig as any)
         console.log('remoteSearch get', keyWord, r, this.keyWord)
         return r
       }

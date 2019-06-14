@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Tag } from 'antd';
-import { onChangeHandler, LabelsConfigList } from '../../../../stores';
+import { onChangeHandler, LabelsConfigList } from '../../../../stores/ItemConfig/OptionsStore'
 import 'rc-tween-one/dist/rc-tween-one.js';
 import { TweenOneGroup } from 'rc-tween-one';
 

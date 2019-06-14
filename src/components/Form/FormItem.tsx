@@ -115,8 +115,7 @@ export class FormItemStore<FM = any, V = any> extends FormItemStoreCore<FM, V> i
           value: Utils.isNotEmptyValueFilter(
             itemConfig.computed !== false ? itemConfig.computed : undefined,
             itemConfig.currentComponentValue,
-            itemConfig.currentValue,
-            value
+            itemConfig.currentValue
           )
         }
       }
@@ -224,7 +223,7 @@ export class FormItemContainer<V, FM> extends React.Component<{
     if (useColumn === false) {
       return this.props.children;
     }
-    if (type === 'address') {
+    if (type === 'address' as any) {
       return (
         <Col className='use-item-col' lg={lg || 16} sm={24} offset={offset} style={this.style}>
           {this.props.children}

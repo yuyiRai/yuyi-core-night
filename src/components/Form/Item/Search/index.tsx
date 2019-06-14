@@ -65,7 +65,7 @@ export const StyledSelect = styled(Select).attrs(
     margin-bottom: -11px;
   }
 `
-export const OSearchItem: React.FunctionComponent<any> = (props: any) => {
+export const OSearchItem: React.FunctionComponent<any> = (props: { itemConfig: ItemConfig, [key: string]: any }) => {
   const { antdForm, formStore, code, itemConfig, ...other } = props
   const isAutoComplete = (itemConfig.allowInput === true && !itemConfig.multiple)
   const OptionItem = isAutoComplete ? AutoComplete.Option : Select.Option
@@ -114,6 +114,7 @@ export const OSearchItem: React.FunctionComponent<any> = (props: any) => {
           showArrow={true}
           defaultActiveFirstOption={false}
           optionFilterProp="title"
+          filterOption={itemConfig.type === 'search' && !itemConfig.i.remoteMethod}
           onSearch={itemConfig.type === 'search' ? searchStore.onSearch : undefined}
           notFoundContent={getNotFoundContent(itemConfig)}
           loading={itemConfig.loading}

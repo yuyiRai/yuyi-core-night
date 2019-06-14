@@ -2,13 +2,17 @@
  * @class ExampleComponent
  */
 
-import * as React from 'react'
-
-import styles from './styles.css'
+import * as React from 'react';
+import styled from 'styled-components';
+import Install from './index.export';
 
 export type Props = { text: string }
-import Install from './index.export'
-export * from './index.export'
+
+const Div = styled.div`
+  margin: 2em auto;
+  border: 2px solid #000;
+  font-size: 2em;
+`
 
 export class ExampleComponent extends React.Component<Props> {
   render() {
@@ -17,10 +21,11 @@ export class ExampleComponent extends React.Component<Props> {
     } = this.props
 
     return (
-      <div className={styles.test}>
+      <Div>
         Example Component: {text}
-      </div>
+      </Div>
     )
   }
 }
 export default Install;
+export * from './index.export';

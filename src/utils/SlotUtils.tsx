@@ -1,10 +1,11 @@
+import { ItemConfig } from '@/stores';
 import { lowerFirst, reduce } from 'lodash';
 import { IKeyValueMap } from 'mobx';
 import { IReactComponent } from 'mobx-react';
 import React from 'react';
 import ErrorBoundary, { FallbackProps } from 'react-error-boundary';
-import { VNode } from 'vue';
-import {Utils} from '.';
+import { CreateElement, VNode } from 'vue';
+import { Utils } from '.';
 
 const myErrorHandler = (error: Error, componentStack: string) => {
   // Do something with the error
@@ -43,6 +44,40 @@ const SlotSourceBase = {
 }
 const SlotSource: React.FunctionComponent<ISlotSource> = VueInReact(SlotSourceBase);
 
+
+const VueRender = VueInReact({
+  props: ['value', 'onChange', 'renderer', 'itemConfig'],
+  // watch: {
+  //   value() {
+  //     this.current = this.value
+  //   }
+  // },
+  computed: {
+    current() {
+      return this.value
+    }
+  },
+  // data() {
+  //   return {
+  //     current: this.value
+  //   }
+  // },
+  render(h: CreateElement) {
+    console.log('CustomRenderer', 'instance', this.value, this, this.renderer)
+    return this.renderer(h, this.current, this.onChange, this.itemConfig)
+  }
+})
+
+export function useVueRender(renderFunc: <T>(h: CreateElement, value: T, onChange: any, itemConfig: ItemConfig ) => VNode, itemConfig: ItemConfig): React.FunctionComponent<{ value: any; onChange: (value: any) => void}> {
+  // const Renderer = React.useCallback(, [renderFunc])
+  return React.useMemo(() => {
+    return (props: any) => {
+      console.error('CustomRenderer', props, itemConfig.i)
+      return <VueRender {...props} renderer={renderFunc} itemConfig={itemConfig} />
+    }
+  }, [renderFunc, itemConfig])
+}
+
 export interface ISlotProps {
   slot: ISlotSource
 }
@@ -61,7 +96,7 @@ const getSlotFromVNode = (nodeFactory: IKeyValueMap<VNode[] | Function>): any =>
     (map: any, target: VNode[] | Function, key: string) => {
       // debugger
       return Object.assign(map, {
-        [key]: function(props) {
+        [key]: function (props) {
           return <SlotComponent slot={{ slotFactory: target, factoryProps: props }} />
         }
       });
@@ -86,7 +121,7 @@ export const react2Vue = (Target: IReactComponent<any>) => {
         attrs: {
           ...props,
           ...attrs,
-          $scopedSlots: scopedSlots || (attrs?attrs.scopedSlots:undefined),
+          $scopedSlots: scopedSlots || (attrs ? attrs.scopedSlots : undefined),
           $commonSlots: () => getSlotFromVNode(slots)
         },
         on: {
@@ -124,20 +159,20 @@ export function slotInjectContainer<T extends IReactComponent<any>>(target: T) {
   injected.displayName = Target.displayName;
   return injected;
 }
-export const Slot: React.FunctionComponent<{ 
-  name: string; 
+export const Slot: React.FunctionComponent<{
+  name: string;
   slot?: IReactComponent;
   [k: string]: any;
-}> = React.memo(function({ name: propertyName, slot, ...other }) {
+}> = React.memo(function ({ name: propertyName, slot, ...other }) {
   const slotName = lowerFirst(propertyName);
   const { slots = {}, scopedSlots = {} } = React.useContext(SlotContext)
   const Renderer = slots[slotName] || scopedSlots[slotName] || slot || (() => true ? <span></span> : <span>slots-{slotName}</span>)
   return <Renderer {...other} />
 })
-export const ScopedSlot: React.FunctionComponent<{ 
-  name: string; 
+export const ScopedSlot: React.FunctionComponent<{
+  name: string;
   [k: string]: any;
-}> = React.memo(function({ name: propertyName, ...other }) {
+}> = React.memo(function ({ name: propertyName, ...other }) {
   const slotName = lowerFirst(propertyName);
   const { scopedSlots: { [propertyName]: slotComponent } } = React.useContext(SlotContext)
   const Renderer = slotComponent || (() => true ? <span></span> : <span>slots-{slotName}</span>)

@@ -10,7 +10,7 @@ import { OptionBase } from "@/utils";
 import { FilterType, IFormValueTransform, IFormValueTransformHandler, FilterTypeKey } from "../input";
 import { IDisplayConfig, IDisplayConfigCreater } from "../ItemDisplayConfig";
 import { IRuleStore, IRuleStoreCreater } from "../RuleConfigStore";
-import { ISearchConfig, ISearchConfigCreater } from "../SearchStore";
+import { ISearchConfig, ISearchConfigCreater, ISearchConfigBase } from "../SearchStore";
 import { CommonStore } from "../../CommonStore";
 import { IRuleConfig } from "./RuleConfig";
 
@@ -31,7 +31,8 @@ export interface FormItemTypeDescription {
   "checkOne": "简易勾选框",
   "switch": "开关",
   "cascader": "级联选择器",
-  "group": "复合录入域，通过children键值对组合多个录入域"
+  "group": "复合录入域，通过children键值对组合多个录入域",
+  "custom": "自定义录入域"
 }
 
 export type FormItemTypeKeys = keyof FormItemTypeDescription
@@ -116,6 +117,7 @@ export interface IItemConfigCreaterStatic<FM, VALUE> extends ConstructorPick<IIt
 export interface IFormItemConstructor<FM = any, VALUE = any, CVALUE = VALUE> extends
   IItemConfigStatic<FM, VALUE, CVALUE>,
   IItemConfigCreaterStatic<FM, VALUE>,
+  ISearchConfigBase<FM>,
   ConstructorPick<ISearchConfigCreater<VALUE, FM>>,
   ConstructorPick<IDisplayConfigCreater<FM>>,
   ConstructorPick<IRuleStoreCreater<VALUE, FM>> 
