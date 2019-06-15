@@ -194,7 +194,10 @@ export class FormStore<
   }
   @action.bound setFormValueWithName(code: string) {
     const nameCode = this.configStore.itemCodeNameMap[code]
-    set(this.formSource, nameCode, this.getValueWithName(code, nameCode))
+    const name = this.getValueWithName(code, nameCode)
+    set(this.formSource, nameCode, name)
+    // debugger
+    this.onItemChangeEmit(nameCode, name)
   }
 
   @autobind async validate(codeList?: string[]) {

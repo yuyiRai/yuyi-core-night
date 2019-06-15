@@ -9,7 +9,7 @@ import { IItemConfig } from "./interface";
 import { CommonStore } from "../CommonStore";
 import { IRuleConfig, IValidator, RuleConfigConstructor, RuleConfigMap, RuleList, ValidatorCallback } from './interface/RuleConfig';
 
-export const keyByRule = keys<IRuleStoreBase<any,any>>()
+export const keyByRule = keys<IRuleStoreBase<string,any>>()
 const config = observable.map({})
 export type RuleErrorIntercept = (value?: any, error?: Error, callback?: ValidatorCallback) => any
 
