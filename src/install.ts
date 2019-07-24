@@ -3,14 +3,23 @@ import Utils from './utils'
 // import { Message } from 'element-react'
 import { forEach } from 'lodash'
 import { VueConstructor } from 'vue';
+// import produce from 'immer';
+// import merge from 'deepmerge'
+
+// Object.assign(window, {
+//   produce,
+//   merge
+// })
+// merge({a:1})
 // export * from './TablePage'
 
 export default function install(Vue: VueConstructor) {
   // locale.use(opts.locale);
   // locale.i18n(opts.i18n);
-
   forEach(components, (component, key) => {
-    Vue.component(key, component)
+    if (!/^use/.test((component as any).name)) {
+      Vue.component(key, component)
+    }
   })
 
   // Vue.use(Loading.directive);

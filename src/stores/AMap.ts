@@ -30,7 +30,7 @@ export class AMapService {
     // }
   }
   /**
-   * @return 插件名字集合
+   * @returns 插件名字集合
    */
   pluginNames(): Array<string> {
     return Object.keys(this.plugin)
@@ -48,7 +48,7 @@ export class AMapService {
     },
     /**
      * 自动搜索补全地名
-     * @return 返回一个promise
+     * @returns 返回一个promise
      */
     'Autocomplete': (map: any, city: string = '全国', search: string): Promise<any[]> => {
       return this.getAutoComplete({ map, city, search })

@@ -2,16 +2,15 @@
  * @module ItemConfig
  */
 
-import { IEventStoreBase } from "@/stores/EventStore";
-import { IKeyValueMap } from "mobx";
-import { ITransformer } from "mobx-utils";
 import { FormStore } from "@/stores/FormStore";
 import { OptionBase } from "@/utils";
-import { FilterType, IFormValueTransform, IFormValueTransformHandler, FilterTypeKey } from "../input";
+import { IKeyValueMap } from "mobx";
+import { ITransformer } from "mobx-utils";
+import { CommonStore } from "../../CommonStore";
+import { FilterType, FilterTypeKey, IFormValueTransform, IFormValueTransformHandler } from "../input";
 import { IDisplayConfig, IDisplayConfigCreater } from "../ItemDisplayConfig";
 import { IRuleStore, IRuleStoreCreater } from "../RuleConfigStore";
-import { ISearchConfig, ISearchConfigCreater, ISearchConfigBase } from "../SearchStore";
-import { CommonStore } from "../../CommonStore";
+import { ISearchConfig, ISearchConfigBase, ISearchConfigCreater } from "../SearchStore";
 import { IRuleConfig } from "./RuleConfig";
 
 export interface FormItemTypeDescription {
@@ -112,7 +111,7 @@ export interface IItemConfigCreaterStatic<FM, VALUE> extends ConstructorPick<IIt
 
 /**
  * typeof i
- * @inheritdoc 
+ * @inheritDoc 
  */
 export interface IFormItemConstructor<FM = any, VALUE = any, CVALUE = VALUE> extends
   IItemConfigStatic<FM, VALUE, CVALUE>,
@@ -132,7 +131,6 @@ export interface IItemConfig<FM = FormModel, VALUE = any, CVALUE = VALUE> extend
   ISearchConfig<VALUE, FM>, 
   IDisplayConfig<FM>, 
   IRuleStore<VALUE, FM>, 
-  IEventStoreBase, 
   CommonStore 
 {
   i: IFormItemConstructor<FM, VALUE>;

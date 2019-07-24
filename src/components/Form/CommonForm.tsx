@@ -1,12 +1,11 @@
-import { Utils } from '@/utils';
 import LocaleProvider from 'antd/lib/locale-provider';
 import zh_CN from 'antd/lib/locale-provider/zh_CN';
 import { IKeyValueMap } from 'mobx';
+import DevTools from 'mobx-react-devtools';
 import * as React from 'react';
 import { FormStore, onItemChangeCallback } from '../../stores/FormStore';
+import { useFormStoreContextProvider } from './hooks';
 
-
-export const NativeStore = React.createContext({formStore: FormStore.prototype});
 
 
 export interface ICommonFormProps<FM = object> extends IKeyValueMap {
@@ -14,66 +13,95 @@ export interface ICommonFormProps<FM = object> extends IKeyValueMap {
    * 表单2
    */
   model: FM;
-  formStore?: FormStore<FM>;
-  storeRef?: (store: FormStore<FM>) => void;
+  storeRef?: (instance: { formStore: FormStore<FM> }) => void;
   onItemChange?: onItemChangeCallback;
 }
 export interface ICommonFormState extends IKeyValueMap {
+  formProps: ICommonFormProps;
   formStore: FormStore;
 }
 
-export const CommonFormContext = React.createContext<{
-  formProps: ICommonFormProps;
-  formInstance: CommonForm;
-}>({ formProps: null, formInstance: null  })
+export const CommonFormContext = React.createContext<ICommonFormState>({ formProps: null, formStore: null })
 
-export class CommonForm extends React.Component<ICommonFormProps, ICommonFormState> {
-  constructor(props: ICommonFormProps) {
-    super(props)
-    this.state = {
-      formStore: FormStore.registerForm(props.model, this)
-    }
-  }
-  static getDerivedStateFromProps(nextProps: ICommonFormProps, prevState: ICommonFormState) {
-    const { formStore: last } = prevState
-    if (!Utils.isEqual(Utils.zipEmptyData(last.formSource), Utils.zipEmptyData(nextProps.model))) {
-      // console.log('getDerivedStateFromProps', nextProps, prevState)
-      FormStore.disposedForm(last.formSource)
-      // debugger
-      FormStore.registerForm(nextProps.model, this, last)
-      // prevState.formStore.formItemMap.delete(prevState.formStore.formSource)
-    }
-    if (!Utils.isNil(nextProps.model)){
-      const formStore = FormStore.registerForm(nextProps.model, null, prevState.formStore)
-      if (Utils.isFunction(nextProps.storeRef)) {
-        nextProps.storeRef(formStore)
-      }
-      if (Utils.isFunction(nextProps.onItemChange)) {
-        formStore.onItemChange(nextProps.onItemChange)
-      }
-      // console.log('formStore diff', nextProps.storeRef, formStore, prevState.formStore, formStore !== prevState.formStore)
-      if (formStore !== prevState.formStore) {
-        return { ...prevState, formStore }
-      }
-    }
-    return prevState
-  }
+// const getCommonFormStore = ({ props, ref }: { props: ICommonFormProps, ref: React.MutableRefObject<any> }) => {
+//   // console.error('storeRef get init');
+//   let lastModel = props.model
+//   const form = useActionObject({
+//     formProps: props,
+//     formStore: FormStore.registerForm(props.model, ref),
+//     nextModel(model: ICommonFormProps['model']) {
+//       if (lastModel !== (Utils.isNotEmptyValueFilter(model) || {})) {
+//         this.disposedLastForm()
+//         const formStore = FormStore.registerForm(model, ref, this.formStore)
+//         // console.log('storeRef get update', this.formStore, formStore);
+//         this.setFormStore(formStore)
+//         lastModel = model
+//       }
+//     },
+//     disposedLastForm() {
+//       FormStore.disposedForm(this.formStore.lastFormSource);
+//       (this.formStore as FormStore<any, any>).setAntdForm(null)
+//       // this.formStore.formItemMap.delete(this.formStore.formSource)
+//     },
+//     setFormStore(formStore: FormStore) {
+//       this.formStore = formStore
+//     },
+//     destory() {
+//       this.disposedLastForm()
+//       this.formStore.antdFormMap.clear()
+//       this.formStore.setForm({})
+//       this.formStore.configStore.setConfigSource([])
+//       this.formStore.destory()
+//       this.formStore = null
+//       lastModel = null
+//     }
+//   })
+//   return form;
+// }
 
-  public render() {
-    const { children } = this.props
-    // const { Inter } = this
-    return (
-      <LocaleProvider locale={zh_CN}>
-        <CommonFormContext.Provider value={{formProps: this.props, formInstance: this}}>
-          <NativeStore.Provider value={{formStore: this.state.formStore}} >
-            <> 
-              {/* <Inter /> */}
-              {children}
-            </>
-          </NativeStore.Provider>
-        </CommonFormContext.Provider>
-      </LocaleProvider>
-    );
-  }
+// export class FormSStore {
+//   app: string;
+//   constructor() {
+//     this.app = '12345'
+//   }
+// }
+export const CommonForm: React.SFC<ICommonFormProps> = (props) => {
+  const Provider = useFormStoreContextProvider(props)
+  // const ref = React.useRef<any>();
+  // const form = useLocalStore(getCommonFormStore, { props: useAsObservableSource(props), ref })
+  // const storeRef = React.useRef(form)
+  // usePropsReciveSync(form.nextModel, props.model)
+  // usePropsRecive((ref, lastRef) => {
+  //   if (ref) {
+  //     ref(storeRef.current)
+  //   }
+  //   return () => {
+  //     ref = null
+  //   }
+  // }, [props.storeRef, storeRef.current])
+  // usePropsRecive((onItemChange) => {
+  //   if (Utils.isFunction(onItemChange)) {
+  //     form.formStore.onItemChange(onItemChange)
+  //   }
+  // }, [props.onItemChange])
+  // // console.error('renderer', form, props);
+  // useUnmount(() => {
+  //   console.error('commonform destory');
+  //   storeRef.current.destory()
+  //   props.storeRef({formStore: null})
+  //   storeRef.current = null
+  // }, [props.storeRef, storeRef])
+  return (
+    <LocaleProvider locale={zh_CN}>
+      <Provider>
+        <>
+          {/* <Inter /> */}
+          {props.children}
+        </>
+        <DevTools />
+      </Provider>
+    </LocaleProvider>
+  );
 }
+
 export default CommonForm;

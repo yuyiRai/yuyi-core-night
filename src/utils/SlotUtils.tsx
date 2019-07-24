@@ -6,6 +6,7 @@ import React from 'react';
 import ErrorBoundary, { FallbackProps } from 'react-error-boundary';
 import { CreateElement, VNode } from 'vue';
 import { Utils } from '.';
+import { Box } from '@material-ui/core';
 
 const myErrorHandler = (error: Error, componentStack: string) => {
   // Do something with the error
@@ -63,7 +64,7 @@ const VueRender = VueInReact({
   //   }
   // },
   render(h: CreateElement) {
-    console.log('CustomRenderer', 'instance', this.value, this, this.renderer)
+    // console.log('CustomRenderer', 'instance', this.value, this, this.renderer)
     return this.renderer(h, this.current, this.onChange, this.itemConfig)
   }
 })
@@ -72,8 +73,8 @@ export function useVueRender(renderFunc: <T>(h: CreateElement, value: T, onChang
   // const Renderer = React.useCallback(, [renderFunc])
   return React.useMemo(() => {
     return (props: any) => {
-      console.error('CustomRenderer', props, itemConfig.i)
-      return <VueRender {...props} renderer={renderFunc} itemConfig={itemConfig} />
+      // console.error('CustomRenderer', props, itemConfig.i)
+      return <Box><VueRender {...props} renderer={renderFunc} itemConfig={itemConfig} /></Box>
     }
   }, [renderFunc, itemConfig])
 }

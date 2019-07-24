@@ -1,24 +1,135 @@
+import { useObserver } from '@/hooks';
+import { Utils } from '@/utils';
 import { AutoComplete, Select, Spin, Tag } from 'antd';
 import { OptGroupProps, SelectProps } from 'antd/lib/select/index';
-import { Observer } from 'mobx-react-lite';
-import { Utils } from '@/utils';
-import { createTransformer } from 'mobx-utils';
 import * as React from 'react';
 import styled from 'styled-components';
 import { OptionsStore } from '../../../../stores/ItemConfig/OptionsStore';
+import { useSearchStore } from '../../hooks/useItemConfig';
 import { IItemConfig, OFormItemCommon } from '../../Interface';
-import { commonInjectItem } from '../commonInjectItem';
-import { useSearchStore } from '../OptionsUtil';
 import { ValueHintContainer } from '../OptionsUtil/ToolTipContainer';
-import { TagGroup } from './TagGroup';
 import { HeadTagAutoComplete } from './HeadTagAutoComplete';
-import { ItemConfig } from '@/stores';
+import { TagGroup } from './TagGroup';
 export interface ISelectItemProps extends OFormItemCommon, SelectProps {
   center?: boolean;
 }
-export const SearchItem: React.FunctionComponent<ISelectItemProps> = commonInjectItem((props: ISelectItemProps) => {
-  return <OSearchItem {...props} center />;
-})
+export const useSearchItem: React.SFC<ISelectItemProps> = (props: any) => {
+  const { code, ...other } = props
+  const [isVisible, changeVisible] = React.useState(undefined)
+  return useObserver(() => {
+    // const itemConfig = useFormItemConfig()
+    // const isAutoComplete = (itemConfig.allowInput === true && !itemConfig.multiple)
+    // const OptionItem = isAutoComplete ? AutoComplete.Option : Select.Option
+    // const OptGroupItem = isAutoComplete ? AutoComplete.OptGroup : Select.OptGroup
+    // const mode = getSelectModel(itemConfig)
+    // const local = useLocalStore((itemConfig) => ({
+    //   itemConfig,
+    //   get searchStore() {
+    //     return this.itemConfig.useSearchStore((store: OptionsStore<JSX.Element>) => {
+    //       return store.displayOptions.map(d => {
+    //         const tag = store.getTagByOption(d)
+    //         return <OptionItem title={d.label} key={d.key} value={d.value}>{tag && <Tag>{tag}</Tag>}{store.getOptionsLabel(d)}</OptionItem>
+    //       });
+    //     })
+    //   }
+    // }), itemConfig)
+    // const { searchStore } = local
+    // const onDropdownVisibleChange = React.useCallback(open => {
+    //   changeVisible(open ? open : undefined);
+    //   !open && local.searchStore.resetKeyword()
+    // }, [local])
+    // const { optionsStore } = itemConfig as ItemConfig
+    // const { transformOption } = optionsStore;
+    // // console.log(isAutoComplete, itemConfig)
+    // // console.log(isAutoComplete, props, optionsStore.displayOptions, transformOption, itemConfig.options)
+    // const [isVisible, changeVisible] = React.useState(undefined)
+    const local = useSearchStore(() => ({
+      computedMap: {
+        mode() {
+          if (this.itemConfig.multiple) {
+            if (this.itemConfig.allowCreate) {
+              return 'tags'
+            }
+            return 'multiple'
+          }
+          return undefined;
+        },
+        isAutoComplete() {
+          return this.itemConfig.allowInput === true && !this.itemConfig.multiple
+        },
+        onDropdownVisibleChange() {
+          return (open: boolean) => {
+            // console.error(open, this, this);
+            changeVisible(open ? open : undefined);
+            !open && this.searchStore.resetKeyword()
+          }
+        }
+      },
+      transformer(store: OptionsStore<JSX.Element>) {
+        const { itemConfig } = store
+        const isAutoComplete = itemConfig.allowInput === true && !itemConfig.multiple
+        const OptionItem = isAutoComplete ? AutoComplete.Option : Select.Option
+        return store.displayOptions.map(d => {
+          const tag = store.getTagByOption(d)
+          return <OptionItem title={d.label} key={d.key} value={d.value}>{tag && <Tag>{tag}</Tag>}{store.getOptionsLabel(d)}</OptionItem>
+        });
+      }
+    }))
+    // const onDropdownVisibleChange = React.useCallback(open => {
+    //   changeVisible(open ? open : undefined);
+    //   !open && local.searchStore.resetKeyword()
+    // }, [local])
+    const { mode, itemConfig, optionsStore, onDropdownVisibleChange, searchStore, isAutoComplete } = local
+    const OptGroupItem = isAutoComplete ? AutoComplete.OptGroup : Select.OptGroup
+    const { transformOption } = optionsStore;
+    const optionsList = switchContainer(
+      <OptGroupItem key={searchStore.searchHintText} label={searchStore.searchHintText} />,
+      transformOption,
+      itemConfig.type === 'search' && Utils.isNotEmptyString(searchStore.searchHintText)
+    )
+    const hint = (
+      <TagGroup labelsConfig={optionsStore.selectedLablesConfig} onClose={v => {
+        other.onChange(v, transformOption)
+      }} />
+    )
+    if (isAutoComplete) {
+      return (
+        <HeadTagAutoComplete
+          optionLabelProp="title"
+          tag={optionsStore.getTagByOption()}
+          {...other}
+          onSearch={searchStore.onSearch}
+          dataSource={transformOption}
+          allowClear
+        />
+      )
+    }
+    const selectElement = (
+      <StyledSelect mode={mode} style={{ textAlign: itemConfig.center ? 'center' : 'left' }}
+        allowClear
+        autoClearSearchValue={false}
+        showSearch={itemConfig.type === 'search'}
+        showArrow={true}
+        defaultActiveFirstOption={false}
+        optionFilterProp="title"
+        filterOption={itemConfig.type === 'search' && !itemConfig.i.remoteMethod}
+        onSearch={itemConfig.type === 'search' ? searchStore.onSearch : undefined}
+        notFoundContent={getNotFoundContent(itemConfig)}
+        loading={itemConfig.loading}
+        {...other}
+        onDropdownVisibleChange={onDropdownVisibleChange}
+      >{optionsList}</StyledSelect>
+    )
+    return <>{
+      switchContainer(
+        <ValueHintContainer value={hint} visible={optionsStore.hasSelectedTag ? isVisible : false} ><></></ValueHintContainer>,
+        selectElement,
+        itemConfig.multiple
+      )
+    }</>
+  }, 'useSearchItem')
+}
+
 export interface ISearchResultGroupProps extends OptGroupProps {
   disabled?: boolean;
 }
@@ -33,19 +144,10 @@ export function switchContainer(container: JSX.Element, children: JSX.Element | 
   return children
 }
 
-export const getSelectModel = createTransformer((itemConfig: IItemConfig) => {
-  if (itemConfig.multiple) {
-    if (itemConfig.allowCreate) {
-      return 'tags'
-    }
-    return 'multiple'
-  }
-  return undefined;
-})
 
-export const getNotFoundContent = createTransformer((itemConfig: IItemConfig) => {
+export const getNotFoundContent = (itemConfig: IItemConfig) => {
   return itemConfig.loading ? <div style={{ textAlign: 'center' }}><Spin size="small" /></div> : undefined
-})
+}
 
 export const StyledSelect = styled(Select).attrs(
   props => ({
@@ -65,73 +167,3 @@ export const StyledSelect = styled(Select).attrs(
     margin-bottom: -11px;
   }
 `
-export const OSearchItem: React.FunctionComponent<any> = (props: { itemConfig: ItemConfig, [key: string]: any }) => {
-  const { antdForm, formStore, code, itemConfig, ...other } = props
-  const isAutoComplete = (itemConfig.allowInput === true && !itemConfig.multiple)
-  const OptionItem = isAutoComplete ? AutoComplete.Option : Select.Option
-  const OptGroupItem = isAutoComplete ? AutoComplete.OptGroup : Select.OptGroup
-  const searchStore = useSearchStore(itemConfig, (store: OptionsStore<JSX.Element>) => {
-    return store.displayOptions.map(d => {
-      const tag = store.getTagByOption(d)
-      return <OptionItem title={d.label} key={d.key} value={d.value}>{tag && <Tag>{tag}</Tag>}{store.getOptionsLabel(d)}</OptionItem>
-    });
-  })
-  const { optionsStore } = itemConfig as ItemConfig
-  const mode = getSelectModel(itemConfig)
-  return (
-    <Observer>{() => {
-      const { transformOption } = optionsStore;
-      // console.log(isAutoComplete, itemConfig)
-      // console.log(isAutoComplete, props, optionsStore.displayOptions, transformOption, itemConfig.options)
-      const [isVisible, changeVisible] = React.useState(undefined)
-      const optionsList = switchContainer(
-        <OptGroupItem key={searchStore.searchHintText} label={searchStore.searchHintText} />,
-        transformOption,
-        itemConfig.type === 'search' && Utils.isNotEmptyString(searchStore.searchHintText)
-      )
-      const hint = (
-        <TagGroup labelsConfig={optionsStore.selectedLablesConfig} onClose={v => {
-          other.onChange(v, transformOption)
-        }} />
-      )
-      if (isAutoComplete) {
-        return (
-          <HeadTagAutoComplete 
-            optionLabelProp="title"
-            tag={optionsStore.getTagByOption()} 
-            {...other} 
-            onSearch={searchStore.onSearch} 
-            dataSource={transformOption} 
-            allowClear
-          />
-        )
-      }
-      const selectElement = (
-        <StyledSelect mode={mode} style={{textAlign: itemConfig.center?'center':'left'}}
-          allowClear
-          autoClearSearchValue={false}
-          showSearch={itemConfig.type === 'search'}
-          showArrow={true}
-          defaultActiveFirstOption={false}
-          optionFilterProp="title"
-          filterOption={itemConfig.type === 'search' && !itemConfig.i.remoteMethod}
-          onSearch={itemConfig.type === 'search' ? searchStore.onSearch : undefined}
-          notFoundContent={getNotFoundContent(itemConfig)}
-          loading={itemConfig.loading}
-          {...other}
-          onDropdownVisibleChange={open => {
-            changeVisible(open ? open : undefined);
-            !open && searchStore.resetKeyword()
-          }}
-        >{optionsList}</StyledSelect>
-      )
-      return <>{
-        switchContainer(
-          <ValueHintContainer value={hint} visible={optionsStore.hasSelectedTag ? isVisible : false} />,
-          selectElement,
-          itemConfig.multiple
-        )
-      }</>
-    }}</Observer>
-  );
-}

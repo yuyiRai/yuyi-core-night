@@ -1,7 +1,10 @@
 import styled from 'styled-components';
-import { IFormProps } from './Form';
 import { Utils } from '@/utils';
-export const FormContainer = styled.form`
+
+export interface IFormContainerProps {
+  labelWidth?: number;
+}
+export const FormContainer: React.SFC<IFormContainerProps> = styled.form`
   border-color: #f522d2;
   .has-error .el-input__inner, .has-error .el-input__inner:hover {
     border-color: #f5222d !important;
@@ -28,11 +31,11 @@ export const FormContainer = styled.form`
   .ant-form-item {
     margin-bottom: 0 !important;
     & > .ant-col.ant-col-1.ant-form-item-label {
-      width: ${(props: IFormProps) => Utils.isNumberFilter(props.labelWidth, 150)}px;
+      width: ${(props: IFormContainerProps) => Utils.isNumberFilter(props.labelWidth, 150)}px;
       float: left;
     }
     & > .ant-col.ant-col-1.ant-form-item-control-wrapper {
-      width: ${(props: IFormProps) => `calc(100% - ${Utils.isNumberFilter(props.labelWidth, 150)}px);`};
+      width: ${(props: IFormContainerProps) => `calc(100% - ${Utils.isNumberFilter(props.labelWidth, 150)}px);`};
     }
     &.unuse-label {
       & > .ant-col.ant-col-1.ant-form-item-label {
@@ -43,4 +46,4 @@ export const FormContainer = styled.form`
       }
     }
   }
-`;
+` as any;

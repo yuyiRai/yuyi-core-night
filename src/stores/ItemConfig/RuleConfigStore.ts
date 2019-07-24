@@ -1,15 +1,15 @@
-import { autobind } from 'core-decorators';
-import { forEach, isRegExp, set } from 'lodash';
-import { action, computed, observable, ObservableMap } from "mobx";
 import { FormStoreCore } from '@/stores/FormStore/FormStoreCore';
 // import { asyncComputed } from '../../utils/AsyncProperty';
 import { Utils } from '@/utils';
+// import { autobind } from 'core-decorators';
+import { forEach, isRegExp, set } from 'lodash';
+import { action, computed, observable, ObservableMap } from "mobx";
 import { getDefaultRules } from './input/Date';
 import { IItemConfig } from "./interface";
-import { CommonStore } from "../CommonStore";
 import { IRuleConfig, IValidator, RuleConfigConstructor, RuleConfigMap, RuleList, ValidatorCallback } from './interface/RuleConfig';
+import { ItemConfigModule } from './itemConfigModule';
 
-export const keyByRule = keys<IRuleStoreBase<string,any>>()
+// export const keyByRule = keys<IRuleStoreBase<string, any>>()
 const config = observable.map({})
 export type RuleErrorIntercept = (value?: any, error?: Error, callback?: ValidatorCallback) => any
 
@@ -25,11 +25,12 @@ export interface IRuleStore<V, FM> extends IRuleStoreBase<V, FM> {
   rules?: IRuleConfig<V> | RuleList<V>;
 }
 
-export class RuleConfig<V, FM> extends CommonStore {
-  @observable itemConfig: IItemConfig<FM, V>;
+export class RuleConfig<V, FM> extends ItemConfigModule<FM, V> {
   constructor(itemConfig: IItemConfig<FM, V>) {
-    super();
-    this.itemConfig = itemConfig
+    super(itemConfig);
+    this.registerDisposer(() => {
+      this.defaultRule
+    })
   }
 
   @computed
@@ -43,7 +44,8 @@ export class RuleConfig<V, FM> extends CommonStore {
       }
       const validator: IValidator<string | number> = Utils.isFunctionFilter(
         itemConfig.required,
-        function (_: any, value: string | number, callback: ValidatorCallback) {
+        (_: any, value: string | number, callback: ValidatorCallback) => {
+          const { itemConfig } = this
           // value = Utils.isNotEmptyValueFilter(value, this.form[this.code])
           if (Utils.isEmptyValue(value) || Utils.isEmptyData(value) || (itemConfig.type === 'number' && value == 0)) {
             callback(new Error(itemConfig.requiredMessage || `[${itemConfig.label}]不能为${itemConfig.type === 'number' ? '0' : '空'}！`))
@@ -60,15 +62,14 @@ export class RuleConfig<V, FM> extends CommonStore {
     }
   }
 
-  @observable 
+  @observable
   public static ruleErrorIntercept: RuleErrorIntercept;
-  
-  @action.bound 
+
+  @action
   public static setRuleErrorIntercept(register: RuleErrorIntercept) {
     this.ruleErrorIntercept = (register)
   }
 
-  @autobind
   public useRuleErrorIntercept(validator: IValidator<V>) {
     if (!RuleConfig.ruleErrorIntercept) {
       return validator
@@ -89,9 +90,9 @@ export class RuleConfig<V, FM> extends CommonStore {
   }
 
 
-  @autobind ruleConvert(rule: RuleConfigConstructor<V, FM>, i = this.itemConfig.i): RuleList<V> {
-    const [a,b,c] = this.ruleGetterParams
-    let ruleGetter = Utils.isFunction(rule) ? rule(a,b,c) : rule;
+  public ruleConvert(rule: RuleConfigConstructor<V, FM>, i = this.itemConfig.i): RuleList<V> {
+    const [a, b, c] = this.ruleGetterParams
+    let ruleGetter = Utils.isFunction(rule) ? rule(a, b, c) : rule;
     if (Utils.isNotEmptyArray(ruleGetter)) {
       return ruleGetter.map(r => this.ruleConvert(r)[0])
     } else if (Utils.isNotEmptyString(ruleGetter)) {
@@ -112,12 +113,12 @@ export class RuleConfig<V, FM> extends CommonStore {
         trigger: 'blur'
       }]
     } else if (Utils.isNotEmptyObject(ruleGetter)) {
-      if(isRegExp(ruleGetter.pattern)) {
+      if (isRegExp(ruleGetter.pattern)) {
         ruleGetter.validator = this.convertRegExpToFunction(ruleGetter.pattern)
         ruleGetter.pattern = undefined
       }
       return [ruleGetter]
-    } 
+    }
     return []
   }
 
@@ -127,8 +128,7 @@ export class RuleConfig<V, FM> extends CommonStore {
       return ruleGetter.test(value) ? callback() : callback(new Error())
     }
   }
-  
-  @autobind
+
   public getRuleList(i = this.itemConfig.i): RuleList | undefined {
     const iRules = []
     // if (this.required) {
@@ -156,7 +156,7 @@ export class RuleConfig<V, FM> extends CommonStore {
   }
 
 
-  @autobind
+  // @autobind
   public async optionsMatcher(r: any, values: any, callback: any) {
     if (!this.itemConfig.allowCreate) {
       const options = this.itemConfig.options || []
@@ -175,14 +175,13 @@ export class RuleConfig<V, FM> extends CommonStore {
   public get defaultRule(): RuleConfigMap<V, FM> {
     return Object.assign(
       RuleConfig.getDefaultRules<V, FM>(),
-      getDefaultRules<V, FM>(this.itemConfig)
+      getDefaultRules(this.itemConfig)
     )
   }
 
   @observable
   public static customRuleMap: ObservableMap<string, RuleConfigConstructor<any, any>> = config
 
-  @action 
   public static registerCustomRule<V, FM>(key: string, rule: RuleConfigConstructor<V, FM>) {
     config.set(key, rule)
   }
@@ -230,7 +229,7 @@ export function initCustomRule() {
     plusOnly: (form, config) => [{
       validator(rule, value, callback: { (arg0: Error): void; (): void; }) {
         // console.log(v,b)
-        if (Utils.isNotEmptyValue(value) && (Utils.isNumberFilter(parseFloat(value+'')) || 0) <= 0) {
+        if (Utils.isNotEmptyValue(value) && (Utils.isNumberFilter(parseFloat(value + '')) || 0) <= 0) {
           return callback(new Error())
         }
         return callback();
@@ -272,7 +271,7 @@ export function initCustomRule() {
       message: `请录入正确的[${config.label}]！`
     }]
   }
-  for(const key in p) {
+  for (const key in p) {
     RuleConfig.registerCustomRule(key, p[key])
   }
 }

@@ -3,8 +3,15 @@
  */
 
 import * as React from 'react';
+import 'babel-polyfill'
 import styled from 'styled-components';
 import Install from './index.export';
+console.log = function (...args: any[]) {
+
+}
+console.info = function (...args: any[]) {
+
+}
 
 export type Props = { text: string }
 

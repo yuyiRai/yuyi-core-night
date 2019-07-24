@@ -7,6 +7,7 @@ import install from './install';
 export * from 'yuyi-core-utils';
 export * from './components';
 export * from './global';
+export * from './hooks'
 export * from './stores';
 export { Utils };
 // import 'element-theme-default/lib/message.css'

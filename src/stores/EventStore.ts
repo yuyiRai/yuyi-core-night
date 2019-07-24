@@ -1,10 +1,8 @@
-import { EventEmitter } from "@/utils";
-import { autobind } from "core-decorators";
-import { filter } from "rxjs/operators";
+import Utils, { EventEmitter } from "@/utils";
+import { assign, filter as lFilter, forEach, reduce } from 'lodash';
 import { IKeyValueMap } from "mobx";
-import { forEach, assign, reduce, filter as lFilter } from 'lodash'
-import Utils from "@/utils";
 import { Subscription } from "rxjs";
+import { filter } from "rxjs/operators";
 
 
 /* class decorator */
@@ -31,14 +29,14 @@ export interface IEventStore extends IEventStoreBase, EventEmitter<any> {
 export class EventStore extends EventEmitter<any> implements IEventStore {
   private eventMap = new WeakMap<any, WeakMap<any, Subscription>>()
   // public static injectedValidEventNames: string[];
-  constructor(public eventNames: string[]) {
+  constructor(public eventNames: string[], public instance: any) {
     super()
   }
   /**
    * 是否是合法事件名
    * @param {string} eventName
    */
-  @autobind isValidEventName(eventName: string) {
+  public isValidEventName(eventName: string) {
     return this.eventNames.includes(eventName)
   }
   /**
@@ -46,7 +44,7 @@ export class EventStore extends EventEmitter<any> implements IEventStore {
    * @param {string} eventName 事件名
    * @param {string[]} args 参数
    */
-  @autobind $emit(eventName: string, ...args: any[]) {
+  public $emit(eventName: string, ...args: any[]) {
     // console.log('log $emit', this.eventNames.includes(eventName), eventName, ...args)
     if (this.eventNames.includes(eventName)) {
       this.emit({
@@ -62,7 +60,7 @@ export class EventStore extends EventEmitter<any> implements IEventStore {
    * @param {string} eventName 事件名
    * @param {(...args, event) => void} callback 事件名
    */
-  @autobind $on(eventName: string, callback: Function, instance: any = this) {
+  public $on(eventName: string, callback: Function, instance: any = this) {
     if (this.eventNames.includes(eventName)) {
       let listeners = this.eventMap.get(instance)
       if (!listeners) {
@@ -126,7 +124,7 @@ export function EventStoreInject<V = any>(eventNames: string[], extendTarget?: a
             get() {
               if (!this.$__event__store__core) {
                 Object.defineProperty(this, '$__event__store__core', {
-                  value: new EventStore(validEventNames),
+                  value: new EventStore(validEventNames, window),
                   enumerable: false,
                   configurable: true,
                   writable: false

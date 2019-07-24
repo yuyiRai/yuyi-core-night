@@ -1,8 +1,9 @@
 /* eslint-disable */
-import { action, computed, IKeyValueMap, observable } from 'mobx';
-import Utils from '@/utils';
-import { ComputedPick, ComputedPropertyCreater, IItemConfig } from './interface';
 import { FormStore } from '@/components';
+import Utils from '@/utils';
+import { action, computed, IKeyValueMap, observable } from 'mobx';
+import { ComputedPick, ComputedPropertyCreater, IItemConfig } from './interface';
+import { ItemConfigModule } from './itemConfigModule';
 export interface IDisplayConfigCreater<FM> {
   inline?: ComputedPropertyCreater<boolean, FM>;
   isViewOnly?: ComputedPropertyCreater<boolean, FM>;
@@ -20,23 +21,24 @@ export interface IDisplayConfigCreater<FM> {
 export interface IDisplayConfig<FM> extends ComputedPick<IDisplayConfigCreater<FM>, FM> {
 }
 
-export class DisplayConfig<FM> {
-  @observable itemConfig: IItemConfig<FM>
+export class DisplayConfig<FM> extends ItemConfigModule<FM, any> {
   @observable.ref staticProps: IKeyValueMap
 
   @computed.struct get props(): Partial<FormStore> & IKeyValueMap {
-    return { ...this.staticProps, ...this.itemConfig.formStore }
-  }
-
-
-  constructor(itemConfig?: IItemConfig<FM>, staticProps?: IKeyValueMap){
-    this.itemConfig = itemConfig;
-    this.staticProps = staticProps;
+    return this.staticProps
   }
   
-  @action init(itemConfig: IItemConfig<FM>, staticProps: IKeyValueMap){
-    this.itemConfig = itemConfig;
-    this.staticProps = staticProps;
+  constructor(itemConfig: IItemConfig<FM>, staticProps?: IKeyValueMap){
+    super(itemConfig)
+    this.init(staticProps)
+  }
+  
+  @action.bound init(staticProps: IKeyValueMap){
+    this.staticProps = staticProps || {};
+    this.registerDisposer(() => {
+      this.itemConfig = null
+      this.staticProps = null
+    })
     return this;
   }
   @computed get isInlineMessage() {

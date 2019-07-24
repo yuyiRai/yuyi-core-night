@@ -1,10 +1,7 @@
+import { action, observable, Utils } from '@/utils';
 import Form, { FormComponentProps } from 'antd/lib/form';
-import { WrappedFormUtils } from 'antd/lib/form/Form';
 import { } from 'antd/lib/form/interface';
-import { get, set } from 'lodash';
-import { IKeyValueMap } from 'mobx';
-import { FormStore } from '../../stores/FormStore';
-import { Utils } from '@/utils';
+import { memo, PropsWithChildren } from 'react';
 import { IFormProps } from './Form';
 
 export function filterToValue(v: any, defaultValue?: any) {
@@ -12,49 +9,58 @@ export function filterToValue(v: any, defaultValue?: any) {
   return v2 === null ? undefined : v2
 }
 
-export const objToForm = (model: IKeyValueMap, store: FormStore, form: WrappedFormUtils) => {
-  let target = {}
-  const r = {}
-    for (const config of store.configStore.configList) {
-      const v = Utils.toJS(get(model, config.code))
-      const value = store.getF2VValue(config.code, filterToValue(v, config.value))
-      // console.log('formValueTransform', config.code, value, v, store)
-      set(target, config.code, Form.createFormField({ value }))
-      // console.log('initvalue', config.code, v, value);
-      if (!Utils.isEqual(v, value, true)) {
-        // set(model, config.code, value)
-        Object.assign(r, store.setFormValueWithComponentSource(config.code, value))
-        // console.log('patchFieldsChange result', r, store);
-      }
-    }
-  // setTimeout(() => {
-
-  //   console.log('patchFieldsChange result', store.formItemConfigMap.$antdForm.validateFields(Object.keys(r)), r, store);
-  // }, 100);
-  // console.log('mapPropsToFields', target)
-  // for (let [key, value] of Object.entries(model)) {
-  //   target[key] = Form.createFormField({ value })
-  // }
-  return target
+export function deepMemoExpect<P extends PropsWithChildren<any>>({ children: ca, ...a }: P, { children: cb, ...b }: P) {
+  return Utils.isEqual(a, b, true)
 }
 
-export const form = Form.create({
+/**
+ * React.memo 深度比较
+ * @param Component 
+ * @param allowChildren 是否忽略children比较（默认是）
+ */
+export function deepMemo(Component: any, allowChildren: boolean = false) {
+  return memo(Component, allowChildren ? Utils.isEqual : deepMemoExpect)
+}
+
+const AntFormStore = observable({
   onFieldsChange(props: IFormProps & FormComponentProps<any>, changedFields: any, allValues) {
     //将表单变化的值绑定到store中
     // console.log('onFieldsChange', props, changedFields, allValues);
     // const r = 
-    props.formStore.patchFieldsChange(changedFields);
+    props.onFieldsChange(changedFields);
     // console.log('onFieldsChange patchFieldsChange result', r, changedFields);
   },
   onValuesChange(props: IFormProps & FormComponentProps<any>, values, allValues) {
     // console.log('onValuesChange', props, values, allValues);
   },
   mapPropsToFields(props: IFormProps & FormComponentProps<any>) {
-    //将store中的值绑定到视图中
-    if(props.config) {
-      props.formStore.setConfig(props.config)
-    }
-    // console.log('objToForm', props.config, Utils.cloneDeep(props.formStore.configStore.configList))
-    return objToForm(props.formStore.formSource, props.formStore, props.form)
-  },
-})
+    // console.error(props);
+    return props.mapPropsToFields()
+    // const { model, formStore: store } = props;
+    // let target = {}
+    // // let form = {}
+    // for (const config of store.configStore.configList) {
+    //   const v = Utils.toJS(get(model, config.code))
+    //   const value = store.getF2VValue(config.code, filterToValue(v, config.value))
+    //   // console.log('formValueTransform', config.code, value, v, store)
+    //   const field = { name: config.code, value }
+    //   set(target, config.code, Form.createFormField(field))
+    //   // set(form, config.code, value)
+    //   // console.log('initvalue', config.code, v, value, config.value);
+    //   if (!Utils.isEqual(v, value, true)) {
+    //     // store.setFormValue(config.code, value)
+    //     store.patchFieldsChange(set({}, config.code, field))
+    //   }
+    // }
+    // // store.setForm(form)
+    // // store.patchFieldsChange(target)
+    // // store.setForm(model)
+    // // console.log('form init', model, target, store.configStore.configList, other);
+    // return target
+  }
+}, {
+    mapPropsToFields: action
+  }, {
+    name: 'AntFormMobxInject'
+  })
+export const form = Form.create(AntFormStore)

@@ -25,7 +25,7 @@ export class List<T = any, TT = T> extends CommonStore {
     this.setTransformer(transformer)
     this.setWatcher()
   }
-  @action.bound
+  @action
   public setList(list?: T[]) {
     this.originalList = observable.array<T>(Utils.isArrayFilter(list) || [], { name: 'original list', deep: true })
   }
@@ -55,7 +55,7 @@ export class List<T = any, TT = T> extends CommonStore {
   }
 
   @observable.ref lastSnapshots: T[] = []
-  @action.bound
+  @action
   public setWatcher() {
     return this.reaction(() => this.originalList.length, length => {
       // console.log('this.originalList.length', length)
@@ -94,7 +94,7 @@ export class List<T = any, TT = T> extends CommonStore {
     }, { fireImmediately: true });
   }
 
-  @action.bound
+  @action
   public setTransformer(transformer?: ITransformer<T, TT>) {
     this.customTransformer = createTransformer(Utils.isFunctionFilter(transformer) || ((i: T) => i) as any)
   }
@@ -107,16 +107,16 @@ export class List<T = any, TT = T> extends CommonStore {
   public get last() {
     return get(this.transformList, this.transformList.length-1);
   }
-  @action.bound
+  @action
   public push(...i: T[]) {
     this.originalList.push(...i);
   }
-  @action.bound
+  @action
   public pop() {
     return this.originalList.pop();
   }
 
-  @action.bound
+  @action
   public set<D = Draft<T>>(index: number, i: T | ((i: D) => D)): T | false {
     const item = this.getOriginal(index)
     if (Utils.isFunction(i)) {
@@ -127,7 +127,7 @@ export class List<T = any, TT = T> extends CommonStore {
     }
     return false;
   }
-  @action.bound update<D = Draft<T>>(index: number, i: (i: D) => D): T | false {
+  @action update<D = Draft<T>>(index: number, i: (i: D) => D): T | false {
     const item = this.getOriginal(index)
     const value: { item: T } = { item: toJS(item) }
     const { item: nextItem } = produce(value, (value: { item: D }) => {
@@ -153,7 +153,7 @@ export class List<T = any, TT = T> extends CommonStore {
    */
   public get(index: number, defaultValue?: T | TT, originalDefaultType?: boolean): TT;
 
-  @action.bound
+  @action
   public get(index: number, defaultValue?: T | TT, originalDefaultType: boolean = true): TT {
     const transValue = get(this.transformList, index)
     if (Utils.isNil(transValue) && !Utils.isNil(defaultValue)) {
@@ -182,7 +182,7 @@ export class List<T = any, TT = T> extends CommonStore {
    * @param autobind 是否在无值时自动初始化下标值（使用默认值）
    */
   public getOriginal(index: number, defaultValue?: T, autobind?: boolean): T;
-  @action.bound
+  @action
   public getOriginal(index: number, defaultValue?: T, autobind: boolean = false): T {
     const getter = get(this.originalList, index)
     if (Utils.isNil(getter) && !Utils.isNil(defaultValue)) {

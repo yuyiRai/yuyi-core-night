@@ -6,7 +6,7 @@ import { Utils } from 'yuyi-core-utils';
 import { FormStore } from '../../stores/FormStore';
 import { react2Vue, slotInjectContainer } from '../../utils/SlotUtils';
 import { CommonForm } from './CommonForm';
-import { FormGroup } from './Form';
+import { ConfigrationalForm } from './Form';
 
 
 // import Loadable from 'react-loadable';
@@ -28,7 +28,7 @@ const GlobalStyle = createGlobalStyle`
 export class RItemGroup extends React.Component<any, any> {
   public render() {
     // console.log('ElItemGroup', this)
-    return <FormGroup {...this.props} config={this.props.config} />;
+    return <ConfigrationalForm {...this.props} config={this.props.config} />;
   }
 }
 export const ElItemGroup = react2Vue(RItemGroup);
@@ -80,11 +80,11 @@ export class RCommonForm2 extends React.PureComponent<any, any> {
     console.log('onChange', code, value, this);
   }
   public store: FormStore;
-  @autobind getStoreRef(store: FormStore) {
+  @autobind getStoreRef({ formStore } : { formStore: FormStore }) {
     if (this.props.storeRef) {
-      this.props.storeRef(store)
+      this.props.storeRef(formStore)
     }
-    this.store = store
+    this.store = formStore
   }
   public render() {
     const { model, config } = this.state
@@ -94,9 +94,10 @@ export class RCommonForm2 extends React.PureComponent<any, any> {
       <span>
         {/* <Slot name='w' /> */}
         <GlobalStyle />
-        {Utils.isNotEmptyArray(config) &&
+        {
+          Utils.isNotEmptyArray(config) &&
           <CommonForm {...other} model={model} onItemChange={this.onChange} storeRef={this.getStoreRef}>
-            <FormGroup config={config} >{children}</FormGroup>
+            <ConfigrationalForm config={config} formContainerRow={{ gutter: 10 }}>{children}</ConfigrationalForm>
           </CommonForm>
         }
       </span>

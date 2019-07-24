@@ -1,11 +1,8 @@
 /* eslint-disable */
+import { EventEmitter, OptionBase, Utils } from '@/utils';
 import { autobind } from 'core-decorators';
 import { difference, get, isError } from 'lodash';
-import { action, computed, extendObservable, IKeyValueMap, isComputedProp, IValueDidChange, observable, ObservableMap, toJS } from 'mobx';
-import { OptionBase } from '@/utils';
-import { EventEmitter } from '@/utils';
-// import { asyncComputed } from '../../utils/AsyncProperty';
-import { Utils } from '@/utils';
+import { action, computed, extendObservable, IKeyValueMap, isComputedProp, IValueDidChange, observable, toJS, transaction } from 'mobx';
 import { IFormItemConstructor, IItemConfig } from './interface/ItemConfig';
 import { ItemConfigBaseConfig } from './ItemConfigBaseConfig';
 
@@ -15,9 +12,9 @@ export interface IPropertyChangeEvent<T = any> extends IValueDidChange<T> {
 export class ItemConfigBase<V, FM = any> extends ItemConfigBaseConfig<V, FM> implements IItemConfig<FM, V> {
   [key: string]: any;
 
-  @observable initConfig: ObservableMap<string, any> = observable.map({})
+  // @observable initConfig: ObservableMap<string, any> = observable.map({})
 
-  @observable $version = 0
+  @observable.ref $version = 0
   // @observable loading = false;
   @computed private get otherKey() {
     return difference(
@@ -44,50 +41,51 @@ export class ItemConfigBase<V, FM = any> extends ItemConfigBaseConfig<V, FM> imp
     // this.observe(this.formSource, (e: IPropertyChangeEvent) => {
     //   console.log('initConfig change2', this[e.name], this.baseConfig[e.name], e, this)
     // }
-    this.observe(this.baseConfigModel.model, (e: IPropertyChangeEvent) => {
-      this.onPropertyChange.emit(e)
-      // console.log('initConfig change2', this[e.name], this.baseConfig[e.name], e, this)
-        const { oldValue, newValue, name } = e
-        if (name === 'options' && !Utils.isEqual(oldValue, newValue)) {
-    //       this.label === '查勘地点' && console.log(
-    //         `${name}: options[${(oldValue || []).length}] => options[${(newValue || []).length}]`, { config: i, event: e }, this.options)
-    //       if (newValue) {
-    //         this.optionsInited = Utils.isNotEmptyArray(newValue)
-    //       }
-          this.$emit('options-change', e.newValue)
-        }
-        // console.log(`${e.name}: ${e.oldValue} => ${e.newValue}`, {config: i, event: e})
-    })
-    this.onPropertyChange.subscribe()
+    // this.observe(this.baseConfigModel.model, (e: IPropertyChangeEvent) => {
+    //   this.onPropertyChange.emit(e)
+    //   // console.log('initConfig change2', this[e.name], this.baseConfig[e.name], e, this)
+    //     const { oldValue, newValue, name } = e
+    //     if (name === 'options' && !Utils.isEqual(oldValue, newValue)) {
+    // //       this.label === '查勘地点' && console.log(
+    // //         `${name}: options[${(oldValue || []).length}] => options[${(newValue || []).length}]`, { config: i, event: e }, this.options)
+    // //       if (newValue) {
+    // //         this.optionsInited = Utils.isNotEmptyArray(newValue)
+    // //       }
+    //       // this.$emit('options-change', e.newValue)
+    //     }
+    //     // console.log(`${e.name}: ${e.oldValue} => ${e.newValue}`, {config: i, event: e})
+    // })
+    // this.onPropertyChange.subscribe()
   }
 
-  @action.bound registerObservables(baseConfig: any) {
-    for (const key of this.otherKey) {
-      // const keyName = _.camelCase("set-"+key)
-      if (!isComputedProp(this, key)) {
-        const thisArg = this;
-        extendObservable(this, {
-          get [key]() {
-            return thisArg.getComputedValue(key, baseConfig)
-          },
-          // [keyName](value) {
-          //   // console.log(key, 'set', value, baseConfig.label)
-          //   return baseConfig[key] = value
-          // }
-        }, {
-            // [keyName]: action.bound
-          }, { deep: false })
+  @action registerObservables(baseConfig: IFormItemConstructor<FM, V>) {
+    transaction(() => {
+      for (const key of this.otherKey) {
+        if (!isComputedProp(this, key)) {
+          const thisArg = this;
+          extendObservable(this, {
+            get [key]() {
+              return thisArg.getComputedValue(key, baseConfig)
+            },
+            // [keyName](value) {
+            //   // console.log(key, 'set', value, baseConfig.label)
+            //   return baseConfig[key] = value
+            // }
+          }, {
+              // [keyName]: action
+            }, { deep: false })
+        }
       }
-    }
+    })
   }
 
   optionsInited = false
-  @action.bound setConfig(baseConfig: IFormItemConstructor<FM, V>, strict?: boolean) {
-    const isChange = this.setBaseConfig({...baseConfig}, strict)
-    isChange && this.registerObservables(baseConfig)
+  @action setConfig(baseConfig: IFormItemConstructor<FM, V>, strict?: boolean) {
+    const isChange = this.setBaseConfig(baseConfig, strict)
+    isChange && this.registerObservables(this.i)
   }
 
-  @action.bound init(initModel: IFormItemConstructor<FM, V>, form: IKeyValueMap, componentProps = {}) {
+  @action init(initModel: IFormItemConstructor<FM, V>, form: IKeyValueMap, componentProps = {}) {
     this.setConfig(initModel)
     this.componentProps = componentProps
   }
@@ -101,7 +99,8 @@ export class ItemConfigBase<V, FM = any> extends ItemConfigBaseConfig<V, FM> imp
     return Utils.isStringFilter(v) || this.currentValue
   }
 
-  @computed.struct get currentValue() {
+  @computed get currentValue() {
+    // trace()
     const v = this.parentConfig 
       ? get((this.parentConfig as any).currentComponentValue, this.keyInnerCode) 
       : this.currentValueFromStore

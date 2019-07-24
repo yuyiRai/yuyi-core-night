@@ -1,34 +1,30 @@
+import { useObserver } from '@/hooks';
+import Radio, { RadioGroupProps } from 'antd/lib/radio';
+import 'antd/lib/radio/style/css';
 import * as React from 'react';
-import Radio, {RadioGroupProps} from 'antd/lib/radio'
-import 'antd/lib/radio/style/css'
+import { useFormItemConfig } from '../hooks/useItemConfig';
 import { OFormItemCommon } from '../Interface/FormItem';
-import { commonInjectItem } from "./commonInjectItem";
-// import Utils from '../../../utils';
-// import classnames from 'classnames'
-// import { VueInReact } from 'vuera'
-import styled from 'styled-components';
-import { useOptionsStoreProps } from './OptionsUtil';
 
 interface IAppProps extends OFormItemCommon, RadioGroupProps {
 }
 
-const App: React.FunctionComponent<IAppProps> = ({ antdForm, formStore, code, itemConfig, ...other }) => {
-  const RadioGroup = useOptionsStoreProps(itemConfig, Radio.Group)
-  return (
-    <RadioGroup {...other} ></RadioGroup>
-  );
+export const useRadioItem = ({ code, ...other }) => {
+  return useObserver(() => {
+    const { itemConfig } = useFormItemConfig()
+    return (
+      <Radio.Group options={itemConfig.useOptionsStore().displayOptions as any} {...other}></Radio.Group>
+    )
+  });
 };
-const StyledItem = styled(App)`
 
-`
+export const useRadioOneItem: React.FunctionComponent<IAppProps> = ({ code, ...other }) => {
+  return useObserver(() => {
+    const itemConfig = useFormItemConfig().itemConfig
+    return (<Radio.Group {...other} options={[
+      { label: itemConfig.YLabel || '是', value: '1' },
+      { label: itemConfig.NLabel || '否', value: '0' },
+    ]} />)
+  });
+};
 
-
-export const RadioItem = commonInjectItem(StyledItem) as any;
-export const RadioOneItem: React.FunctionComponent<IAppProps> = commonInjectItem(({ antdForm, formStore, code, itemConfig, ...other }) => {
-  return ( <Radio.Group {...other} options={[
-    { label: itemConfig.YLabel || '是', value: '1'},
-    { label: itemConfig.NLabel || '否', value: '0'},
-  ]}/> );
-}) as any;
-
-export default App;
+export default useRadioItem;

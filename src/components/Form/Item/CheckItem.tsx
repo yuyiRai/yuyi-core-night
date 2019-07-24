@@ -1,34 +1,27 @@
-import { Row, Col } from 'antd';
+import { Observer, useObserver } from "@/hooks";
+import { ItemConfig } from '@/stores';
+import { Option } from '@/utils';
 import Checkbox, { CheckboxGroupProps } from 'antd/lib/checkbox';
-import 'antd/lib/checkbox/style/css';
 // import Switch, { SwitchProps } from 'antd/lib/switch';
 // import 'antd/lib/switch/style/css';
 import 'element-ui/lib/theme-chalk/switch.css';
-import { Switch } from 'element-react'
+import { pullAll } from 'lodash';
 import * as React from 'react';
-import { OFormItemCommon } from '../Interface/FormItem';
-import { commonInjectItem } from "./commonInjectItem";
-import { useOptionsStore } from './OptionsUtil';
-import { Observer } from "mobx-react-lite";
 // import { SlotContext } from '@/utils/SlotUtils';
 import { ScopedSlot } from '../../../utils/SlotUtils';
-import { Option } from '@/utils';
-import { pullAll } from 'lodash';
-import { ItemConfig } from '@/stores';
+import { useFormItemConfig } from '../hooks/useItemConfig';
+import { OFormItemCommon } from '../Interface/FormItem';
 
-export interface IAppProps extends CheckboxGroupProps, OFormItemCommon {
+export interface ICheckItemProps extends CheckboxGroupProps, OFormItemCommon {
 
 }
-export const CheckItem: React.FunctionComponent<IAppProps> = commonInjectItem(
-  props => <Check {...props} />
-)
 export type CheckScopedSlot<FM = object, VALUE = any> = (props: {
   col: {
-    data: VALUE, 
-    item: Option, 
-    index: number, 
+    data: VALUE,
+    item: Option,
+    index: number,
     props: FM
-  }, 
+  },
   onChange: any,
   value: boolean,
   config: ItemConfig
@@ -36,82 +29,65 @@ export type CheckScopedSlot<FM = object, VALUE = any> = (props: {
 
 declare const option: Option;
 declare const i: number;
-const Check: React.FunctionComponent<IAppProps> = ({ antdForm, formStore, code, itemConfig, onChange, onBlur, ...other }) => {
-  const store = useOptionsStore(itemConfig)
-  // const { scopedSlots } = React.useContext(SlotContext)
-  if (itemConfig.useSlot) {
-    // const slot: CheckScopedSlot = scopedSlots[itemConfig.slot]
-    // const slotFactory = (options: Option, index: number) => slot({
-    //   col: {
-    //     data: other.value,
-    //     item: options,
-    //     index,
-    //     props: formStore.formSource
-    //   },
-    //   value: other.value && other.value.includes(options.value),
-    //   onChange: (checked: boolean) => {
-    //     if (checked) {
-    //       const nextV = Utils.isArrayFilter(other.value) || []
-    //       nextV.push(options.value)
-    //       onChange(nextV)
-    //     } else {
-    //       onChange(pullAll([...Utils.castArray(other.value)], [options.value]))
-    //     }
-    //   },
-    //   config: itemConfig
-    // })
-    // return (
-    //   <div className='el-checkbox-group'>
-    //     <For index='i' each='option' of={store.displayOptions}>
-    //       <span key={i}>{ slotFactory(option, i) }</span>
-    //     </For>
-    //   </div>
-    // )
-    const slotFactory = (options: Option, index: number) => ({
-      col: {
-        data: other.value,
-        item: options,
-        index,
-        props: formStore.formSource
-      },
-      value: other.value && other.value.includes(options.value),
-      onChange(checked: boolean) {
-        if (checked) {
-          const nextV = Utils.isArrayFilter(other.value) || []
-          nextV.push(options.value)
-          onChange(nextV)
-        } else {
-          onChange(pullAll([...Utils.castArray(other.value)], [options.value]))
-        }
-      },
-      config: itemConfig
-    })
-    return (
-      <div className='el-checkbox-group'>
-        <For index='i' each='option' of={store.displayOptions}>
-        <ScopedSlot key={option.value} name={itemConfig.slot} {...slotFactory(option, i)} />
-        </For>
-      </div>
-    )
-  }
+const checkSlots = (itemConfig: ItemConfig, onChange: any, other: any) => {
+  const store = itemConfig.useOptionsStore()
+  const slotFactory = (options: Option, index: number) => ({
+    col: {
+      data: other.value,
+      item: options,
+      index,
+      props: itemConfig.formStore.formSource
+    },
+    value: other.value && other.value.includes(options.value),
+    onChange(checked: boolean) {
+      if (checked) {
+        const nextV = Utils.isArrayFilter(other.value) || []
+        nextV.push(options.value)
+        onChange(nextV)
+      } else {
+        onChange(pullAll([...Utils.castArray(other.value)], [options.value]))
+      }
+    },
+    config: itemConfig
+  })
   return (
-    <Observer>{() =>
-      <Checkbox.Group {...other} style={{ width: '100%' }} onChange={(e) => {
-        console.log(itemConfig.slot, e)
-        onChange(e)
-      }} options={store.displayOptions as any}>
-        <Row>
-          <Col span={8}><Checkbox value="A">A</Checkbox></Col>
-          <Col span={8}><Checkbox value="B">B</Checkbox></Col>
-          <Col span={8}><Checkbox value="C">C</Checkbox></Col>
-          <Col span={8}><Checkbox value="D">D</Checkbox></Col>
-          <Col span={8}><Checkbox value="E">E</Checkbox></Col>
-        </Row>
-      </Checkbox.Group>
-    }</Observer>
-  );
+    <div className='el-checkbox-group'>
+      <For index='i' each='option' of={store.displayOptions}>
+        <ScopedSlot key={option.value} name={itemConfig.slot} {...slotFactory(option, i)} />
+      </For>
+    </div>
+  )
 }
-interface SwitchProps extends ElementReactLibs.ComponentProps<{}> {
+export const useCheckItem = ({ code, onChange, onBlur, ...other }: ICheckItemProps, ref: any) => {
+  return useObserver(() => {
+    const itemConfig = useFormItemConfig().itemConfig
+    // const { scopedSlots } = React.useContext(SlotContext)
+    if (itemConfig.useSlot) {
+      return checkSlots(itemConfig, onChange, other)
+    }
+    const store = itemConfig.useOptionsStore()
+    const { displayOptions } = store
+    return (
+      <Observer>{() => (
+        <Checkbox.Group ref={ref} {...other} style={{ width: '100%' }} onChange={onChange} options={displayOptions as any}>
+          {/* <Observer>{
+            () => displayOptions.map(option => {
+              return <Observer key={option.value}>{() => <Checkbox value={option.value}>{option.label}</Checkbox>}</Observer>
+            }) as any
+          }</Observer> */}
+          {/* <Row>
+            <Col span={8}><Checkbox value="A">A</Checkbox></Col>
+            <Col span={8}><Checkbox value="B">B</Checkbox></Col>
+            <Col span={8}><Checkbox value="C">C</Checkbox></Col>
+            <Col span={8}><Checkbox value="D">D</Checkbox></Col>
+            <Col span={8}><Checkbox value="E">E</Checkbox></Col>
+          </Row> */}
+        </Checkbox.Group>
+      )}</Observer>
+    )
+  }, 'useCheckItem')
+}
+interface SwitchProps {
   value?: number | string | boolean
   disabled?: boolean
   width?: number
@@ -129,10 +105,9 @@ interface SwitchProps extends ElementReactLibs.ComponentProps<{}> {
 export interface ISwitchItemProps extends SwitchProps, OFormItemCommon {
 
 }
-const OSwitch = ({ antdForm, formStore, code, itemConfig, ...other }: ISwitchItemProps) => {
-  console.log(other)
-  return <Switch {...other} />
+
+export const useSwitchItem: React.FunctionComponent<ISwitchItemProps> = ({ code, ...other }: ISwitchItemProps) => {
+  // const itemConfig = useFormItemConfig()
+  // console.log(other, itemConfig)
+  return <span></span>//<Switch onText='' offText='' {...other} />
 }
-export const SwitchItem: React.FunctionComponent<ISwitchItemProps> = commonInjectItem(
-  (props) => <OSwitch {...props} onText='' offText='' />
-)

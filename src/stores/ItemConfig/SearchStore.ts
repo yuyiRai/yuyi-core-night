@@ -1,11 +1,10 @@
 import { Option, OptionBase, Utils } from "@/utils";
-import { autobind } from "core-decorators";
 import produce from "immer";
 import { get, toString } from 'lodash';
 // import { Debounce } from 'lodash-decorators';
-import { action, computed, IArraySplice, IObservableArray, IReactionDisposer, observable, reaction } from "mobx";
-import { CommonStore } from "../CommonStore";
+import { action, computed, IArraySplice, IObservableArray, IReactionDisposer, observable } from "mobx";
 import { IItemConfig, ItemConfigEventHandler } from "./interface";
+import { ItemConfigModule } from "./itemConfigModule";
 
 export type KeyString = string;
 export interface ISearchConfigBase<FM> {
@@ -25,11 +24,11 @@ export interface ISearchConfig<V, FM> extends ISearchConfigBase<FM> {
   getPathValueWithLeafValue?(leafValue: string): Option[] | Promise<Option[]>;
 }
 
-export class SearchStore<V, FM> extends CommonStore {
+export class SearchStore<V, FM> extends ItemConfigModule<FM, V> {
   [k: string]: any;
-  @observable mode: 'filter' | 'search' = 'search'
-  @observable itemConfig: IItemConfig<FM, V>;
-  @observable searchKeyHistory: IObservableArray<string> = observable.array([])
+  @observable.ref mode: 'filter' | 'search'
+  @observable searchKeyHistory: IObservableArray<string>
+
   @computed get keyWord(): string | undefined {
     const { searchKeyHistory: history } = this
     const lastIndex = history.length - 1
@@ -37,12 +36,32 @@ export class SearchStore<V, FM> extends CommonStore {
     return key === '*' ? '' : key
   }
 
-  @observable inited: boolean = false
-  @observable initedListener: IReactionDisposer;
+  @observable.ref inited: boolean
+  @observable.ref initedListener: IReactionDisposer;
+  @observable searchResult
 
+  @action postConstructor() {
+    this.mode = 'search'
+    this.searchKeyHistory = observable.array([])
+    this.inited = false
+    this.searchResult = []
+  }
   constructor(itemConfig: IItemConfig<FM, V>) {
-    super()
-    this.itemConfig = itemConfig
+    super(itemConfig)
+    // console.error('useSearchStore', this.code);
+    this.postConstructor()
+    this.registerDisposer(() => {
+      if (this.initedListener) {
+        this.initedListener()
+        this.initedListener = null;
+      }
+      // this.initAction = null
+      // this.initOption = null
+      // this.searchOptions = null
+      // this.lazyLoadDataPromise = null
+      // this.initTopOptions = null
+      // this.initOptionWithOptionList
+    })
     this.reaction(() => this.inited, isInited => {
       if (isInited === false) {
         if (this.initedListener) {
@@ -54,14 +73,14 @@ export class SearchStore<V, FM> extends CommonStore {
         this.initedListener = null;
       }
     }, { fireImmediately: true })
-    console.log('useSearchStore', this.itemConfig.type === 'cascader', this, this.itemConfig.code)
+    // console.log('useSearchStore', this.itemConfig.type === 'cascader', this, this.itemConfig.code)
   }
 
-  @action initAction() {
+  @action.bound initAction() {
     if (['selectTree', 'cascader'].includes(this.itemConfig.type)) {
       // this.itemConfig.formStore.onItemChange
       // this.initOption()
-      return reaction(() => this.itemConfig.currentComponentValue, (value: string[]) => {
+      return this.reaction(() => this.itemConfig.currentComponentValue, (value: string[]) => {
         this.initOption()
         if (!Utils.isEmptyData(value)) {
           // debugger
@@ -73,10 +92,14 @@ export class SearchStore<V, FM> extends CommonStore {
       }, { fireImmediately: true })
     } else if (this.itemConfig.type === 'search') {
       this.autorun(() => {
-        if (this.searchKeyHistory.length > 10) {
-          this.searchKeyHistory.shift()
+        try {
+          if (this.searchKeyHistory.length > 10) {
+            this.searchKeyHistory.shift()
+          }
+          this.toSearch(this.keyWord)
+        } catch (e) {
+          // console.error(e);
         }
-        this.toSearch(this.keyWord)
         // this.itemConfig.filterOptions = [this.keyWord]
       })
       this.intercept(this.searchKeyHistory, (change: IArraySplice<string>) => {
@@ -90,7 +113,7 @@ export class SearchStore<V, FM> extends CommonStore {
       })
       // reaction
       this.resetKeyword()
-      return reaction(() => this.searchName, (searchName: string) => {
+      return this.reaction(() => this.searchName, (searchName: string) => {
         if (Utils.isNotEmptyString(searchName)) {
           // if (searchName!=='*')
           // debugger
@@ -112,77 +135,114 @@ export class SearchStore<V, FM> extends CommonStore {
     return this.itemConfig.getPathValueWithLeafValue || ((leafValue: string) => Utils.convertValueOption(Utils.castArray(leafValue, false)))
   }
   @action.bound async initOption() {
-    this.initTopOptions()
-    if (this.itemConfig.type === 'cascader') {
-      return this.initOptionWithPathValue()
-    } else {
-      return this.initOptionWithLeafValue()
+    try {
+      await this.initTopOptions()
+      if (this.itemConfig.type === 'cascader') {
+        return await this.initOptionWithPathValue()
+      } else {
+        return await this.initOptionWithLeafValue()
+      }
+    } catch (e) {
+      // console.error(e);
+      return
     }
   }
   // @Debounce(1000)
-  @autobind async initOptionWithLeafValue(value: string = this.itemConfig.currentComponentValue) {
-    this.itemConfig.setLoading(true, 'runInAction')
+  @action.bound async initOptionWithLeafValue(value: string = this.itemConfig.currentComponentValue) {
+    this.loadingStart('runInAction')
     return this.initOptionWithOptionList(Utils.castArray(await this.getPathValueWithLeafValue(value), false))
   }
-  @autobind async initOptionWithPathValue(value: string[] = this.itemConfig.currentComponentValue) {
+  @action.bound initOptionWithPathValue(value: string[] = this.itemConfig.currentComponentValue) {
     return this.initOptionWithOptionList(Utils.convertValueOption(value))
   }
 
   @action.bound async initTopOptions() {
     if (this.loadData && this.itemConfig.options.length === 0) {
+      // console.error('initTopOptions start');
       const optionsList = await this.lazyLoadDataPromise([]);
-      this.itemConfig.setOptions(optionsList)
+      // console.error('initTopOptions end');
+      this.setLoadedOptions(optionsList)
       return optionsList
     }
     return this.itemConfig.options
   }
+
+
   // @Debounce(1000)
-  @action.bound async initOptionWithOptionList(optionList: Option[] | Promise<Option[]>) {
-    const selectedOptions = await optionList;
+  @action.bound async initOptionWithOptionList(optionList: Option[]) {
+    // console.error('initOptionWithOptionList start');
+    const selectedOptions = optionList;
     // console.log('options searcher initOption')
     if (this.loadData) {
-      this.itemConfig.setLoading(true, 'runInAction')
+      this.loadingStart('runInAction')
       if (Utils.isNotEmptyArray(selectedOptions)) {
         const list = []
-        for (let index = 0; index < selectedOptions.length-1; index++) {
+        for (let index = 0; index < selectedOptions.length - 1; index++) {
           // if (index < selectedOptions.length - 1) {
           // }
+          const index = 0;
           list.push(selectedOptions[index])
           const nextOptions = await this.lazyLoadDataPromise(list, true)
-          this.itemConfig.setOptions(nextOptions)
+          this.setLoadedOptions(nextOptions)
           // if (index === selectedOptions.length - 2) {
           // }
         }
       }
-      this.itemConfig.setLoading(false, 'runInAction')
+      this.loadingEnd('runInAction')
     }
+    // console.error('initOptionWithOptionList end');
     return;
   }
 
-  loadDataBuffer = Utils.createSimpleTimeBufferInput(async (dataPathBuffer: Option[][]) => {
-    // console.log(keyPathBuffer);
-    console.log('loadData', dataPathBuffer)
-    for (const keyPath of dataPathBuffer) {
-      const optionsList = await this.lazyLoadDataPromise(keyPath);
-      // debugger
-      this.itemConfig.setOptions(Utils.cloneDeep(optionsList))
+  @action.bound
+  public setLoadedOptions(options: OptionBase[]) {
+    if (this.itemConfig) {
+      this.itemConfig.setOptions(options)
     }
-    this.itemConfig.setLoading(false)
-  }, this, 100, true)
+  }
 
-  @computed get loadData() {
+  @action.bound
+  public loadingStart(sourceName?: string) {
+    if (!this.destoryFlag && this.itemConfig) {
+      this.itemConfig.setLoading(true, sourceName)
+    }
+  }
+
+  @action.bound
+  public loadingEnd(sourceName?: string) {
+    if (!this.destoryFlag && this.itemConfig) {
+      this.itemConfig.setLoading(false, sourceName)
+    }
+  }
+
+  @computed get loadDataBuffer() {
+    return Utils.createSimpleTimeBufferInput(async (dataPathBuffer: Option[][]) => {
+      // console.log(keyPathBuffer);
+      // console.log('loadData', dataPathBuffer)
+      for (const keyPath of dataPathBuffer) {
+        const optionsList = await this.lazyLoadDataPromise(keyPath);
+        // debugger
+        this.setLoadedOptions(Utils.cloneDeep(optionsList))
+      }
+      this.loadingEnd()
+    }, this.uuid as any, 100, true)
+  }
+
+  @computed
+  public get loadData(): typeof SearchStore['prototype']['loadDataHandler'] | undefined {
     return this.itemConfig.loadData ? this.loadDataHandler : undefined
   }
 
   @action.bound
   private async loadDataHandler(dataPath: Option[]) {
     if (!this.itemConfig.loading) {
-      this.itemConfig.setLoading(true)
+      this.loadingStart()
     }
     this.loadDataBuffer(dataPath)
     // lastItem.isLeaf = true
   }
 
+  @action.bound
   private async lazyLoadDataPromise(dataPath: Option[], strict?: boolean) {
     const lastItem = dataPath[dataPath.length - 1];
     let loadedData: Option[];
@@ -194,11 +254,12 @@ export class SearchStore<V, FM> extends CommonStore {
     //   // console.log('loadData', dataPath, path === '', this.itemConfig)
     // }
     // if (path !== '')
-    // this.itemConfig.setOptions(produce(this.itemConfig.options || [], optionsList => set(optionsList, `${path}.disabled`, true)))
+    // this.setLoadedOptions(produce(this.itemConfig.options || [], optionsList => set(optionsList, `${path}.disabled`, true)))
     if (needLoadData) {
       loadedData = await this.itemConfig.loadData(lastItem ? { ...lastItem } : null, dataPath, this.itemConfig.formSource, this.itemConfig);
     }
     if (path !== '') {
+      const loadDataDeep = this.itemConfig.loadDataDeep - 2
       const optionsList: OptionBase[] = produce(Utils.cloneDeep(this.itemConfig.options), optionsList => {
         const result = get(optionsList, path)
         if (result) {
@@ -207,7 +268,7 @@ export class SearchStore<V, FM> extends CommonStore {
             //   debugger
             // }
             result.children = Utils.cloneDeep(loadedData).map(i => Utils.isNil(i.isLeaf) ? Object.assign(i, {
-              isLeaf: (Utils.isArrayFilter(dataPath) || []).length > this.itemConfig.loadDataDeep - 2
+              isLeaf: (Utils.isArrayFilter(dataPath) || []).length > loadDataDeep
             }) : i);
           }
           if (Utils.isArray(result.children)) {
@@ -217,7 +278,7 @@ export class SearchStore<V, FM> extends CommonStore {
           }
           result.disabled = false
         } else {
-          // this.itemConfig.setOptions(produce(this.itemConfig.options, optionsList => set(optionsList, `${path}.disabled`, true)))
+          // this.setLoadedOptions(produce(this.itemConfig.options, optionsList => set(optionsList, `${path}.disabled`, true)))
         }
       });
       // console.log('loadData leaf',  this.itemConfig.label, optionsList);
@@ -226,12 +287,12 @@ export class SearchStore<V, FM> extends CommonStore {
       // if (this.itemConfig.label==='机构'){
       //   debugger
       // }
-      this.itemConfig.setOptions(loadedData)
+      this.setLoadedOptions(loadedData)
     }
     return loadedData
   }
 
-  @autobind searchOptions(keyPath: Option[], optionsList = this.itemConfig.options): {
+  @action.bound searchOptions(keyPath: Option[], optionsList = [...this.itemConfig.options]): {
     path: string;
     result: Option;
   } {
@@ -255,39 +316,39 @@ export class SearchStore<V, FM> extends CommonStore {
     return this.keyWord ? `关键字 ${this.keyWord} 的搜索结果` : ''
   }
 
-  @observable searchResult = []
 
-  @Utils.timebuffer(200)
-  @action.bound onSearch(keyWord: string, trigger = 'onSearch'): void {
+  // @Utils.timebuffer(200)
+  @action onSearch(keyWord: string, trigger = 'onSearch'): void {
     console.log('want todo search', keyWord, trigger)
     this.searchKeyHistory.push(keyWord)
   }
 
-  @action.bound toSearch(keyWord: string) {
-    console.log('尝试搜索', this.itemConfig.code, keyWord)
-    this.itemConfig.setLoading(true, 'toSearch')
-    this.remoteSearch(keyWord).then(options => {
-      this.itemConfig.setOptions(options)
-      // this.itemConfig.formStore.setFormValueWithName(this.itemConfig.code)
-      // console.log('搜索完毕', this.itemConfig.code, keyWord, options, this.itemConfig.optionsStore.selectedLablesStr)
-    }).finally(() => {
-      this.itemConfig.setLoading(false, 'toSearch')
-    })
+  @action.bound async toSearch(keyWord: string) {
+    const { itemConfig } = this
+    console.log('尝试搜索', itemConfig.code, keyWord)
+    this.loadingStart('toSearch')
+    const options = await this.remoteSearch(keyWord)
+    this.setLoadedOptions(options)
+    this.loadingEnd('toSearch')
   }
   @action.bound resetKeyword() {
     this.onSearch('*', 'resetKeyword')
   }
 
   @computed get remoteMethod() {
-    const { i, formSource } = this.itemConfig
-    if (Utils.isFunction(i.remoteMethod)) {
+    return this.itemConfig ? SearchStore.getRemoteMethod(this.itemConfig as any) : (async () => [])
+  }
+
+  public static getRemoteMethod = (itemConfig: IItemConfig) => {
+    const { i } = itemConfig
+    const { remoteMethod } = i
+    if (Utils.isFunction(remoteMethod)) {
       return async (keyWord: string) => {
-        const r = await i.remoteMethod(keyWord, formSource, this.itemConfig as any)
-        console.log('remoteSearch get', keyWord, r, this.keyWord)
+        const r = await remoteMethod(keyWord, itemConfig.formSource, itemConfig as any)
         return r
       }
     } else {
-      const { type, options } = this.itemConfig
+      const { type, options } = itemConfig
       if (type === 'search') {
         return async (keyWord: string) => {
           return Utils.waitingPromise<Option[]>(0, options)
@@ -299,7 +360,7 @@ export class SearchStore<V, FM> extends CommonStore {
     }
   }
 
-  @autobind remoteSearch(keyWord: string) {
+  @action.bound remoteSearch(keyWord: string) {
     if (this.itemConfig.multiple) {
       return this.multipleRemoteSearch(Utils.isString(keyWord) ? keyWord.split(',') : [])
     }
@@ -307,7 +368,7 @@ export class SearchStore<V, FM> extends CommonStore {
     return this.remoteMethod(toString(keyWord) || this.itemConfig.currentValue)
   }
 
-  @autobind async multipleRemoteSearch(keyWord: string[]) {
+  @action.bound async multipleRemoteSearch(keyWord: string[]) {
     const { remoteMethod } = this;
     let nextOptions: OptionBase[] = []
     if (Utils.isFunction(remoteMethod)) {

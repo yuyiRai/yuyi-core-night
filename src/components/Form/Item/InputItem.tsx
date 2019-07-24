@@ -1,62 +1,96 @@
+import { useActionObject, useLocalStore, useObserver } from '@/hooks';
+import { Utils } from '@/utils';
 import Input, { InputProps, TextAreaProps } from 'antd/lib/input';
-import 'antd/lib/input/style/css';
-import React, { FocusEventHandler, ChangeEventHandler } from 'react';
+import TextArea from 'antd/lib/input/TextArea';
+import React from 'react';
+import { useFormItemConfig } from '../hooks/useItemConfig';
 import { OFormItemCommon } from '../Interface/FormItem';
-import { commonInjectItem } from "./commonInjectItem";
-import { Utils } from '../../../utils';
-import { isFunction } from 'util';
 import { ValueHintContainer } from './OptionsUtil/ToolTipContainer';
 // import { SlotContext } from '../../../utils/SlotUtils';
 
 const inev = Utils.isNotEmptyValueFilter
 
-export interface IHasShadowValueProps<V = any> extends OFormItemCommon {
-  onChange?: ChangeEventHandler<V>;
-  onBlur?: FocusEventHandler<V>;
+export type IHasShadowValueProps<C, V = any> = OFormItemCommon & {
   value?: V;
+} & Partial<C extends React.Component<infer P> ? P : any>
+
+function shadowValueFactory<V>({ value }: { value: V }) {
+  return useActionObject({
+    currentValue: Utils.isNotEmptyValueFilter(value) || '',
+    shadowValue: Utils.isNotEmptyValueFilter(value) || '',
+    setShadowValue(value: V) {
+      this.shadowValue = value
+    },
+    setValue(value: V) {
+      this.currentValue = value
+    }
+  })
 }
 
-export function useShadowValue<P = any>(initValue: any, props: IHasShadowValueProps) {
-  const { itemConfig, onChange, onBlur, value: currentValue } = props
-  const state = React.useState(initValue)
-  const [lastV, setLastV] = React.useState(initValue) // 记录最后变更的值
-  const shadowValue = state[0]
-  const setShadowValue = state[1]
 
+export function useShadowValue<C extends Input | TextArea, V extends string = any>(
+  initValue: V,
+  props: IHasShadowValueProps<C, V>,
+  ref: React.Ref<C>
+): {
+  onBlur: React.FocusEventHandler<any>,
+  onChange: React.ChangeEventHandler<any>,
+  value: any
+} {
+  const { onChange, value: currentValue } = props
+  const itemConfig = useFormItemConfig().itemConfig
+  const store = useLocalStore(shadowValueFactory, { value: initValue })
   React.useEffect(() => {
-    if (inev(lastV) !== inev(currentValue)) {
-      // console.log('input: change props value', inev(lastV), inev(currentValue))
-      setShadowValue(currentValue)
-      setLastV(currentValue)
+    if (inev(store.currentValue) !== inev(currentValue)) {
+      store.setShadowValue(currentValue as any)
+      store.setValue(currentValue as any)
     }
-  }, [currentValue, lastV, setShadowValue, setLastV])
+  }, [currentValue, store.currentValue])
 
+  // React.useImperativeHandle<Input>(ref, () => {
+  //   return {
+  //     onChange() {
+
+  //     },
+  //     onBlur() {
+
+  //     }
+  //   }
+  // })
   if (itemConfig.watchInput) {
     return {
-      value: shadowValue,
+      get value() {
+        return store.shadowValue
+      },
       onChange(e: any) {
         const nextValue = e.target.value
-        setShadowValue(nextValue)
+        store.setShadowValue(nextValue)
         onChange(e)
-        if (lastV !== nextValue) {// 记录最后变更的值
-          setLastV(nextValue)
+        if (store.currentValue !== nextValue) {// 记录最后变更的值
+          store.setValue(nextValue)
         }
       },
-      onBlur
+      onBlur(e: any) {
+
+      }
     }
   } else {
     return {
-      value: shadowValue,
-      onChange(e: any) {
-        setShadowValue(e.target.value)
+      get value() {
+        return store.shadowValue
       },
-      onBlur(e: React.FocusEvent<HTMLInputElement>) {
+      onChange(e: any) {
+        store.setShadowValue(e.target.value)
+        // console.log(store.shadowValue);
+      },
+      onBlur(e) {
         if (inev(e.target.value) !== inev(currentValue)) {
           onChange(e)
-          if (lastV !== e.target.value) // 记录最后变更的值
-            setLastV(e.target.value)
+          if (store.currentValue !== e.target.value) // 记录最后变更的值
+            store.setValue(e.target.value as V)
+          // Input类焦点移除时不需要额外事件
+          // Utils.isFunction(onBlur) && onBlur(e)
         }
-        isFunction(onBlur) && onBlur(e)
       }
     }
   }
@@ -72,46 +106,42 @@ declare global {
 
 export type IInputItemProps = InputProps & OFormItemCommon
 
-export const InputItem: React.FunctionComponent<IInputItemProps> = commonInjectItem(
-  props => <Text {...props} />
-)
-export type ITextAreaItemProps = TextAreaProps & OFormItemCommon
-export const TextAreaItem: React.FunctionComponent<ITextAreaItemProps> = commonInjectItem(
-  props => <Area {...props} />
-)
-
-const Text: React.FunctionComponent<IInputItemProps> = (props) => {
-  const { antdForm, formStore, code, itemConfig, ...other } = props
-  const { value, onChange, onBlur } = useShadowValue<IInputItemProps>(itemConfig.currentValue, props)
-  // console.log('fieldDecoratorOption', itemConfig.label, value, other.value, other);
-  // const { slots } = React.useContext(SlotContext)
-  // const Inter = slots.inter
-  // console.log(slots)
-  return <>{(
-    <ValueHintContainer value={value}>
-      <Input allowClear={false}
-        {...other}
-        onChange={onChange}
-        value={value}
-        onBlur={onBlur}
-        suffix={itemConfig.suffix}
-        maxLength={itemConfig.maxLength}
-      />
-    </ValueHintContainer>
-    )}
-  </>
+export const useInputItem = (props: IInputItemProps, ref: any) => {
+  return useObserver(() => {
+    const itemConfig = useFormItemConfig().itemConfig
+    const { code, ...other } = props
+    // useLog('fieldDecoratorOption', code, itemConfig.label, other.value, other);
+    const shadowValueStore = useShadowValue<Input>(itemConfig.defaultValue, props, ref)
+    // useLog('fieldDecoratorOption2', code, itemConfig.label, shadowValueStore.value, other);
+    return (
+      <ValueHintContainer value={shadowValueStore.value}>
+        <Input ref={ref} allowClear={false}
+          {...other}
+          onChange={shadowValueStore.onChange}
+          value={shadowValueStore.value}
+          onBlur={shadowValueStore.onBlur}
+          suffix={itemConfig.suffix}
+          maxLength={itemConfig.maxLength}
+        />
+      </ValueHintContainer>
+    )
+  }, 'useInputItem')
   // return <Input {...other}/>
 }
 
-const Area: React.FunctionComponent<ITextAreaItemProps> = (props) => {
-  const { antdForm, formStore, code, itemConfig, ...other } = props
-  const { value, onChange, onBlur } = useShadowValue<ITextAreaItemProps>(other.value, props)
-  return (
-    <Input.TextArea
-      {...other} rows={!itemConfig.autoSize && 4}
-      value={value}
-      onChange={onChange}
-      onBlur={onBlur} autosize={itemConfig.autoSize} />
-  )
-}
-export default Text;
+export type ITextAreaItemProps = TextAreaProps & OFormItemCommon
+export const useTextAreaItem: React.FunctionComponent<ITextAreaItemProps> = React.forwardRef<TextArea, ITextAreaItemProps>(
+  (props, ref) => {
+    const itemConfig = useFormItemConfig().itemConfig
+    const store = useShadowValue<TextArea>(props.value, props, ref)
+    const { code, ...other } = props
+    return useObserver(() => (
+      <Input.TextArea ref={ref}
+        {...other} rows={!itemConfig.autoSize && 4}
+        value={store.value}
+        onChange={store.onChange}
+        onBlur={store.onBlur} autosize={itemConfig.autoSize} />
+    ), 'useTextAreaItem')
+  }
+)
+export default useInputItem;

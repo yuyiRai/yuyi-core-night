@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { set } from 'lodash';
-import Utils, { computed, observable } from '@/utils';
+import Utils, { computed, observable, action } from '@/utils';
 import { DateFormatter, EDateFormatter, parseTime } from '@/utils';
 import { FormModel } from '../interface';
 
@@ -34,9 +34,11 @@ export interface IFormValueTransform<FM, FV = any, CV = any> {
 export class FormValueTransform<FM extends FormModel, FV = any, CV = any> implements IFormValueTransform<FM, FV, CV> {
   @observable.ref private type: FilterType<FM>;
   @observable.ref private code: string
-  constructor(type: FilterType<FM>, code: string) {
+
+  @action.bound postInit(type: FilterType<FM>, code: string) {
     this.type = type
-    this.code = code;
+    this.code = code
+    return this
   }
   @computed get F2V() {
     const { type } = this;
@@ -128,5 +130,5 @@ export class FormValueTransform<FM extends FormModel, FV = any, CV = any> implem
 }
 
 export default function getTransform<FM extends FormModel, FV = any, CV = any>(code: string, type: FilterType<FM>): IFormValueTransform<FM, FV, CV> {
-  return new FormValueTransform(type, code);
+  return new FormValueTransform<FM, FV, CV>().postInit(type, code);
 }

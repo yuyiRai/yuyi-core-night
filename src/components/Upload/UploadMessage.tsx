@@ -4,7 +4,7 @@ import { observer } from 'mobx-react'
 
 export class UploadProgressStore {
   @observable persent: number = 0;
-  @action.bound setPersent(p: number) {
+  @action setPersent(p: number) {
     this.persent = p;
   }
   @computed get progressText() {

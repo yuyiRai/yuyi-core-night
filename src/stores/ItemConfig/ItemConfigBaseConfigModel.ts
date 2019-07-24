@@ -1,35 +1,35 @@
-import { FormStore } from '@/stores/FormStore';
-import { EventStoreInject } from '@/stores/EventStore';
+import { FormStore } from '@/stores/FormStore/FormStore';
 import { Utils } from '@/utils';
-import { autobind, override } from 'core-decorators';
+import { override } from 'core-decorators';
+import produce from 'immer';
 import { get } from 'lodash';
 import { action, computed, IKeyValueMap, observable, toJS } from 'mobx';
-import { createTransformer, createViewModel, IViewModel } from 'mobx-utils';
 import { CommonStore } from "../CommonStore";
-import { IFormItemConstructor } from './interface/ItemConfig';
-import { IPropertyChangeEvent } from './ItemConfigBase';
+import { FormItemType, IFormItemConstructor } from './interface/ItemConfig';
 
-@EventStoreInject(['options-change'])
+const FormItemGroup = new WeakMap()
+
+// @EventStoreInject(['options-change'])
 export class ItemConfigBaseConfigModel<V, FM> extends CommonStore {
   [k: string]: any;
   @observable.ref
   public baseConfigKeys: string[] = [];
-  @observable.ref
-  public baseConfig: IFormItemConstructor<FM, V> = { code: '_' };
   @observable
-  public baseConfigModel: IViewModel<IFormItemConstructor<FM, V>> = createViewModel(observable(this.baseConfig));
+  public baseConfigMap = observable.map<keyof IFormItemConstructor, IFormItemConstructor[keyof IFormItemConstructor]>({ code: '_' } as any, { deep: false })
+
   @computed.struct
   public get i(): IFormItemConstructor<FM, V> {
-    return this.baseConfigModel.model;
+    return this.cloneFormMapToObjWithKeys(this.baseConfigMap, this.baseConfigKeys);
   }
-  @computed
-  public get type() {
-    return this.i.type;
-  }
-  @computed
-  public get code() {
-    return this.i.code;
-  }
+
+  public code: string;
+
+  @observable.ref
+  public type: FormItemType;
+
+  @observable.ref
+  public nameCode: string;
+
   @computed
   public get keyCode() {
     return this.code.split('.')[0];
@@ -50,9 +50,9 @@ export class ItemConfigBaseConfigModel<V, FM> extends CommonStore {
           }
         }), {}) : false
   }
-  
+
   @computed.struct get currentValueFromStore() {
-    if(this.keyInnerCode) {
+    if (this.keyInnerCode) {
       return get(this.formStore.formMap.get(this.keyCode), this.keyInnerCode)
     }
     return this.formStore.formMap.get(this.keyCode)
@@ -60,7 +60,7 @@ export class ItemConfigBaseConfigModel<V, FM> extends CommonStore {
 
   @observable.ref
   public formStore: FormStore;
-  @action.bound
+  @action
   public setFormStore(formStore: FormStore) {
     if (formStore instanceof FormStore) {
       this.formStore = formStore;
@@ -73,48 +73,65 @@ export class ItemConfigBaseConfigModel<V, FM> extends CommonStore {
     return (this.formStore && this.formStore.formSource) || {} as FM;
   }
 
-  private lastReceiveConfig: IKeyValueMap<IFormItemConstructor<FM, V>> = {}
+  private lastReceiveConfig: IFormItemConstructor<FM, V> = { code: '_' }
+  private baseConfigCache: IFormItemConstructor<FM, V> = { code: '_' }
   protected configInited: boolean = false
+
+
+  @computed get FormItemGroup() {
+    return FormItemGroup
+  }
+
+  constructor() {
+    super();
+    this.registerDisposer(() => {
+      this.setBaseConfig({ code: this.code }, true)
+    })
+  }
+
+  /**
+   * 设置
+   * @param baseConfig 配置项内容
+   * @param strict 
+   */
   @action.bound
-  protected setBaseConfig(baseConfig: IFormItemConstructor<FM, V>, strict: boolean = false): boolean {
+  protected setBaseConfig(baseConfig: IFormItemConstructor<FM, V>, strict: boolean = true): boolean {
     baseConfig = baseConfig && baseConfig.i ? baseConfig.i : baseConfig
-    if (strict || !Utils.isEqual(this.lastReceiveConfig, baseConfig)) {
-      if (this.configInited) {
-        // if (this.label==='机构'){
-        //   debugger
-        // }
-        for (const key in baseConfig) {
-          if (!Utils.isEqual(this.lastReceiveConfig[key], baseConfig[key])) {
-            this.baseConfig[key] = baseConfig[key]
-          }
-        }
-      } else {
-        // console.log('setBaseConfig', baseConfig, strict)
-        this.baseConfig = baseConfig
-        this.baseConfigKeys = Object.keys(baseConfig);
-        for (const name of this.baseConfigKeys.concat(['options', 'loading'])) {
-          this.registerKey(baseConfig, name);
-        }
-        this.baseConfigModel = createViewModel(baseConfig);
-        this.observe(baseConfig, (e: IPropertyChangeEvent) => { });
-        // console.log('initConfig change init', baseConfig, this);
-        // this.objectToDiff(this.baseConfigModel.model, baseConfig)
+    if (baseConfig) {
+      this.type = baseConfig.type
+      this.code = baseConfig.code
+      this.nameCode = baseConfig.nameCode
+      this.FormItemGroup.set(this, baseConfig.code)
+    }
+    // console.error('setBaseConfig', this.lastReceiveConfig, baseConfig, this);
+    
+    // 严格模式下进行深比较
+    if (!(strict ? Utils.isEqual(this.lastReceiveConfig, baseConfig) : this.lastReceiveConfig === baseConfig)) {
+      const nextCache = produce(this.baseConfigCache, (cache: typeof baseConfig) => {
+        this.mapToDiff(this.baseConfigMap, baseConfig, cache, strict)
+      })
+      if (nextCache !== this.baseConfigCache) {
+        this.baseConfigCache = nextCache
+      }
+      this.baseConfigKeys = Object.keys(baseConfig).concat(['options', 'loading']); // 部分属性持久化
+      if (!this.configInited) {
         if (Utils.isFunction(baseConfig.refConfig)) {
           Reflect.apply(baseConfig.refConfig, this, [this]);
         }
         this.configInited = true
       }
-      this.lastReceiveConfig = Utils.cloneDeep(baseConfig);
+      // 严格模式下进行深拷贝进行
+      this.lastReceiveConfig = strict ? Utils.cloneDeep(baseConfig) : baseConfig;
       return true;
     }
     return false;
   }
-  @autobind
-  public getComputedValue(key: string, target: IFormItemConstructor<FM, V> = this.i, defaultValue?: any) {
+  
+  protected getComputedValue(key: string, target: IFormItemConstructor<FM, V> = this.i, defaultValue?: any) {
     try {
       const keyValue = target[key];
       if (!(/(^refConfig$)|^(on|get(.*?))|((.*?)Method)$|(.*?)filter(.*?)/.test(key)) && (keyValue instanceof Function)) {
-        const computedValue = keyValue(this.formStore.formMap.toJSON(), this);
+        const computedValue = keyValue(this.formStore.formsourceCloneFromMap, this);
         return Utils.isNil(computedValue) ? defaultValue : computedValue;
       }
       return keyValue;
@@ -122,21 +139,21 @@ export class ItemConfigBaseConfigModel<V, FM> extends CommonStore {
       return undefined;
     }
   }
-  
+
+
   @override
-  @autobind
   public export(): ExportedFormModel<IFormItemConstructor<FM>> {
     return ItemConfigBaseConfigModel.export(this)
   }
 
-  public static export = createTransformer(<FM>(config: ItemConfigBaseConfigModel<any, FM>): ExportedFormModel<IFormItemConstructor<FM>> => {
+  public static export = <FM>(config: ItemConfigBaseConfigModel<any, FM>): ExportedFormModel<IFormItemConstructor<FM>> => {
     const model: ExportedFormModel<IFormItemConstructor<FM>> = {} as ExportedFormModel<IFormItemConstructor<FM>>;
     for (const key of config.baseConfigKeys) {
       model[key] = config[key];
     }
     model.__isExportObject = true;
     return toJS(model);
-  })
+  }
 }
 
 export type ExportedFormModel<T> = Partial<T> & {

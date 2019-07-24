@@ -1,25 +1,31 @@
 /* eslint-disable */
-import { autobind } from 'core-decorators';
-import { cloneDeep, findIndex, map, pullAll } from 'lodash';
-import { action, computed, extendObservable, observable, runInAction } from 'mobx';
-import { createTransformer, ITransformer } from 'mobx-utils';
 import Utils, { Option, OptionBase } from '@/utils';
+import { cloneDeep, findIndex, map, pullAll } from 'lodash';
+import { action, computed, observable, runInAction } from 'mobx';
+import { expr, ITransformer } from 'mobx-utils';
 import { IItemConfig } from './interface';
+import { ItemConfigModule } from './itemConfigModule';
 
 export interface PathOption extends Option {
   path: string;
   parentOption?: Option;
 }
 
-export class OptionsTransformerStore<V, T> {
+export class OptionsTransformerStore<V, T> extends ItemConfigModule<any, V> {
   [k: string]: any;
-  @observable itemConfig: IItemConfig<any, any>;
   __keyMap = {};
   @observable.ref transformer: ITransformer<OptionsStore, T[]>;
-  constructor(itemConfig: IItemConfig<any, any>, transformer?: ITransformer<OptionsStore, T[]>) {
-    this.itemConfig = itemConfig;
+
+  constructor(itemConfig: IItemConfig<any, V>, transformer?: ITransformer<OptionsStore, T[]>) {
+    super(itemConfig)
+    this.postConstructor(transformer)
+  }
+  @action postConstructor(transformer?: ITransformer<OptionsStore, T[]>) {
+    this.registerDisposer(() => {
+      this.transformer = null
+    })
     if (transformer) {
-      this.transformer = createTransformer(transformer)
+      this.transformer = transformer
     }
     if (this.itemConfig.allowInput) {
       // console.log(this);
@@ -39,7 +45,7 @@ export class OptionsTransformerStore<V, T> {
     }
   }
 
-  static getOptionsKey(item: any, index: number, parentKey?: string) {
+  public static getOptionsKey(item: any, index: number, parentKey?: string) {
     return `${
       Utils.isString(parentKey) ? `${parentKey}.` : ''
       }${
@@ -47,11 +53,12 @@ export class OptionsTransformerStore<V, T> {
       }`;
   }
 
-  @computed get __optionArr(): Option[] {
+  @computed 
+  private get __optionArr(): Option[] {
     return OptionsStore.getOptionArr(this.itemConfig.options);
   }
 
-  public static getOptionArr(sourceOptions: OptionBase[], parentKey?: any): Option[] {
+  private static getOptionArr(sourceOptions: OptionBase[], parentKey?: any): Option[] {
     const options = Utils.zipEmptyData(Utils.isArrayFilter(sourceOptions) || []);
     const length = Math.min(options.length, 100);
     const next: Option[] = Array(length);
@@ -98,7 +105,7 @@ export class OptionsTransformerStore<V, T> {
 
   @computed get convertedOption(): PathOption[] {
     this.__keyMap = {};
-    return this.todoConvertOption(this.__optionArr);
+    return observable.array(this.todoConvertOption(this.__optionArr), { name: 'optionsList@', deep: false });
   }
 
   private todoConvertOption(option: any[], parentOption?: PathOption): PathOption[] {
@@ -108,7 +115,7 @@ export class OptionsTransformerStore<V, T> {
       const { itemConfig } = this;
       const baseOption: Option = this.toConvertedOption(o, index)
       if (baseOption) {
-        const option = extendObservable({}, {
+        const next = {
           ...baseOption,
           get disabled() {
             return itemConfig.loading
@@ -116,12 +123,12 @@ export class OptionsTransformerStore<V, T> {
           get path() {
             return `${this.parentOption ? `${this.parentOption.path}.children` : ''}[${result.length}]`
           },
-          parentOption
-        });
-        if (option && option.children) {
-          option.children = this.todoConvertOption(option.children, option)
+          parentOption,
         }
-        result.push(option);
+        if (next.children) {
+          next.children = this.todoConvertOption(next.children, next)
+        }
+        result.push(next);
       }
     });
     return result;
@@ -137,8 +144,8 @@ export class OptionsTransformerStore<V, T> {
   @computed get getOptionsLabel() {
     return Utils.isFunctionFilter(this.itemConfig.getOptionsLabel, (option: Option) => option.label)
   }
-  
-  @autobind getTagByOption(option?: Option) {
+
+  getTagByOption(option?: Option) {
     const { getTagByOption } = this.itemConfig
     return Utils.isFunction(getTagByOption) && getTagByOption(option || this.selectedOptions[0])
   }
@@ -152,7 +159,7 @@ export class OptionsStore<V = any, T = any> extends OptionsTransformerStore<V, T
   /**
    * 录入值的自动转化
    */
-  @action.bound async setShadowOptionByValue(value: string, source: any) {
+  @action async setShadowOptionByValue(value: string, source: any) {
     const options = await this.itemConfig.getOptionsSafe();
     // if(this.itemConfig.label==='交强险承保单位')
     //   debugger
@@ -162,7 +169,7 @@ export class OptionsStore<V = any, T = any> extends OptionsTransformerStore<V, T
   /**
    * 录入值的自动转化
    */
-  @action.bound async setShadowOption(label: string, source: any) {
+  @action async setShadowOption(label: string, source: any) {
     await this.itemConfig.getOptionsSafe();
     // if(this.itemConfig.label==='交强险承保单位')
     //   debugger
@@ -170,11 +177,11 @@ export class OptionsStore<V = any, T = any> extends OptionsTransformerStore<V, T
     this.shadowUpdateDispatcher(label, value, source);
   }
 
-  @autobind labelToValue(label: any) {
+  public labelToValue(label: any) {
     return Utils.isStringFilter(Utils.labelToValue(this.displayOptions, new RegExp(`^(\\\[(.*)\\\]|)${Utils.escapeRegExp(label)}(\\\[(.*)\\\]|)$`)), label);
   }
 
-  @autobind async shadowUpdateDispatcher(label: any, value: any, source: any) {
+  public async shadowUpdateDispatcher(label: any, value: any, source: any) {
     console.log(`setShadowOption by ${source} mode: ${this.shadowOptionMode}, value: ${value}, label: ${label}`, {
       options: cloneDeep(this.displayOptions), config: this.itemConfig, options1: cloneDeep(this.itemConfig.options)
     })
@@ -196,7 +203,7 @@ export class OptionsStore<V = any, T = any> extends OptionsTransformerStore<V, T
       }
     }
   }
-  @action.bound updateShadowOption(value: any, label: any = undefined) {
+  @action updateShadowOption(value: any, label: any = undefined) {
     if (Utils.isString(this.shadowOption.errorMsg)) {
       this.shadowOption.errorMsg = null;
     }
@@ -253,22 +260,23 @@ export class OptionsStore<V = any, T = any> extends OptionsTransformerStore<V, T
     });
   }
   @computed get displayOptions(): Option[] {
-    const { allowInput } = this.itemConfig;
-    const defaultOptions = this.filterOptions;
-    if (allowInput) {
-      // debugger
-      // console.log('getShadowOption', defaultOptions, this.shadowOption)
-      if (this.selectedItemIndex > -1) {
-        return Utils.arrayMapDive(defaultOptions,
-          (option: Option, index: number) => this.selectedItemIndex === index ? { ...option, highlight: true } : option
-        );
+    return expr(() => {
+      const { allowInput } = this.itemConfig;
+      const defaultOptions = this.filterOptions;
+      if (allowInput) {
+        // debugger
+        // console.log('getShadowOption', defaultOptions, this.shadowOption)
+        if (this.selectedItemIndex > -1) {
+          return Utils.arrayMapDive(defaultOptions,
+            (option: Option, index: number) => this.selectedItemIndex === index ? { ...option, highlight: true } : option
+          );
+        } else if (Utils.isNotEmptyString(this.shadowOption.value) && !Utils.getOptionsByLabel(defaultOptions, this.shadowOption.label, true)) {
+          // this.itemConfig.allowInput && console.log('shadowOption', {...this.shadowOption}, this)
+          return Utils.concat(this.shadowOption, defaultOptions);
+        }
       }
-      else if (Utils.isNotEmptyString(this.shadowOption.value) && !Utils.getOptionsByLabel(defaultOptions, this.shadowOption.label, true)) {
-        // this.itemConfig.allowInput && console.log('shadowOption', {...this.shadowOption}, this)
-        return Utils.concat(this.shadowOption, defaultOptions);
-      }
-    }
-    return defaultOptions;
+      return defaultOptions;
+    }).slice(0)
   }
 
   @computed get nativeDisplayOptionList(): Option[] {
@@ -281,11 +289,11 @@ export class OptionsStore<V = any, T = any> extends OptionsTransformerStore<V, T
     return map(this.transformOption, option => Utils.toJS(option))
   }
 
-  @autobind valuesToLabels(value: any) {
+  valuesToLabels(value: any) {
     return Utils.valuesToLabels(this.displayOptions, value)
   }
 
-  @autobind labelsToValues(label: any) {
+  labelsToValues(label: any) {
     return Utils.labelsToValues(this.displayOptions, label)
   }
 

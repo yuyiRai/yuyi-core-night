@@ -24,14 +24,16 @@ export const checkDateToDate = <V, FM>(date: any, itemConfig: IItemConfig<FM, V>
 })
 
 export const checkFutureDate = <V, FM>(itemConfig: IItemConfig<FM, V>) => ((rule: any, value: any, callback: any) => {
+  const { label } = itemConfig
+  itemConfig = null
   if (Utils.isNotEmptyValue(value) && new Date().getTime() > new Date(value+'').getTime()) {
-    return callback(new Error(`${itemConfig.label}不能早于当前时间`));
+    return callback(new Error(`${label}不能早于当前时间`));
   }
   return callback();
 })
 
 export const getDefaultRules = function<V, FM>(itemConfig: IItemConfig<FM, V>): RuleConfigMap<V, FM> {
-  return {
+  const re = {
     dateToDate30: [{
       validator: checkDateToDate(30, itemConfig),
       trigger: ['change'],
@@ -41,6 +43,8 @@ export const getDefaultRules = function<V, FM>(itemConfig: IItemConfig<FM, V>): 
       trigger: 'change'
     }]
   }
+  itemConfig = null
+  return re as any
 }
 
 export const DateUtils = {

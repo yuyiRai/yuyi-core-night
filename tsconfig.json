@@ -1,100 +1,73 @@
 {
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "downlevelIteration": true,
+    "composite": true,
+    "rootDir": "./src",
+    "baseUrl": "./src",
+    "paths": {
+      "@": ["./"],
+      "@/*": ["./*"]
+    },
+    "outDir": "./lib",
+    "declarationDir": "./types",
+    "tsBuildInfoFile": "../.tsBuildInfo/night.json",
+    "incremental": true,
+    "plugins": [{
+      "transform": "ts-import-plugin",
+      "type": "config",
+      "libraryName": "antd",
+      "libraryDirectory": "lib",
+      "style": "css",
+      "afterDeclarations": true
+    }, {
+      "transform": "ts-import-plugin",
+      "type": "config",
+      "libraryName": "rxjs/operators",
+      "libraryDirectory": "../_esm5/internal/operators",
+      "camel2DashComponentName": false,
+      "transformToDefaultImport": false,
+      "afterDeclarations": true
+    }, {
+      "transform": "ts-import-plugin",
+      "type": "config",
+      "libraryName": "rxjs",
+      "libraryDirectory": "_esm5/internal/observable",
+      "camel2DashComponentName": false,
+      "transformToDefaultImport": false,
+      "afterDeclarations": true
+    }, {
+      "transform": "ts-import-plugin",
+      "type": "config",
+      "style": false,
+      "libraryName": "@material-ui/core",
+      "libraryDirectory": "",
+      "camel2DashComponentName": false,
+      "afterDeclarations": true
+    }, {
+      "transform": "ts-import-plugin",
+      "type": "config",
+      "libraryName": "element-ui",
+      "libraryDirectory": "lib",
+      "camel2DashComponentName": true,
+      "style": false,
+      "afterDeclarations": true
+    }, {
+      "transform": "ts-import-plugin",
+      "type": "config",
+      "libraryName": "element-react",
+      "libraryDirectory": "dist/npm/es6/src",
+      "camel2DashComponentName": true,
+      "style": false,
+      "afterDeclarations": true
+    }],
     "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": false,
-    "noImplicitThis": false,
-    "noImplicitAny": false,
-    "allowSyntheticDefaultImports": true,
-    "strictNullChecks": false,
     "suppressImplicitAnyIndexErrors": false,
     "module": "esnext",
-    "target": "es5",
-    "lib": ["es6", "dom", "dom.iterable", "scripthost", "esnext"],
-    "sourceMap": true,
-    "strict": false,
-    "allowJs": false,
-    "jsx": "react",
-    "moduleResolution": "node",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "noUnusedLocals": true,
-    "skipDefaultLibCheck": true,
-    "skipLibCheck": true,
     "allowUnreachableCode": false,
-    "esModuleInterop": true,
-    "noUnusedParameters": false,
-    "declaration": true,
-    "outDir": "lib",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@": ["./src"]
-    },
-    "plugins": [
-      { "transform": "tsx-control-statements/transformer", "type": "config", "after": false },
-      { "transform": "yuyi-core-env/config/ts-plugin-mmlpx", "type": "config" },
-      { "transform": "typescript-transform-paths" },
-      { "transform": "typescript-plugin-styled-components", "type": "config", "after": false },
-      { "transform": "@avensia-oss/ts-transform-hoist-objects-in-props", "type": "program", "after": false },
-      { "transform": "ts-nameof", "type": "raw", "after": false }, 
-      { "transform": "ts-optchain/transform", "after": false },
-      { "transform": "ts-transformer-keys/transformer" },
-      { "transform": "ts-import-plugin", "type": "config", 
-        "libraryName": "antd", 
-        "libraryDirectory": "lib", 
-        "style": "css" 
-      },
-      { "transform": "ts-import-plugin", "type": "config",
-        "libraryName": "rxjs/operators",
-        "libraryDirectory": "../_esm5/internal/operators",
-        "camel2DashComponentName": false,
-        "transformToDefaultImport": false
-      },
-      { "transform": "ts-import-plugin", "type": "config",
-        "libraryName": "rxjs",
-        "libraryDirectory": "_esm5/internal/observable",
-        "camel2DashComponentName": false,
-        "transformToDefaultImport": false
-      },
-      { "transform": "ts-import-plugin", "type": "config", 
-        "style": false,
-        "libraryName": "lodash",
-        "libraryDirectory": null,
-        "camel2DashComponentName": false 
-      },
-      { "transform": "ts-import-plugin", "type": "config", 
-        "style": false,
-        "libraryName": "@material-ui/core",
-        "libraryDirectory": "",
-        "camel2DashComponentName": false 
-      }, 
-      { "transform": "ts-import-plugin", "type": "config", 
-        "libraryName": "element-ui",
-        "libraryDirectory": "lib",
-        "camel2DashComponentName": true,
-        "style": false
-      }, 
-      { "transform": "ts-import-plugin", "type": "config", 
-        "libraryName": "element-react",
-        "libraryDirectory": "dist/npm/es6/src",
-        "camel2DashComponentName": true,
-        "style": false
-      }
-    ]
+    "isolatedModules": false,
+    "noEmit": false
   },
-  "exclude": [
-    "node_modules",
-    "devlib",
-    "build",
-    "dist",
-    "scripts",
-    "acceptance-tests",
-    "webpack",
-    "jest",
-    "example"
-  ],
-  "include": [
-    "src"
-  ]
+  "include": ["src"],
+  "exclude": ["node_modules", "devlib", "build", "dist", "scripts", "acceptance-tests", "webpack", "jest", "example", "**/*.test.ts"]
 }

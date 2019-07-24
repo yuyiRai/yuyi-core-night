@@ -1,7 +1,7 @@
+import { Utils } from '@/utils';
 import { autobind, readonly } from 'core-decorators';
 import { assign, reduce } from 'lodash';
 import { action, computed, IKeyValueMap, keys as getKeys, observable, ObservableMap, toJS, values } from 'mobx';
-import { Utils } from '@/utils';
 import { CommonStore } from '../CommonStore';
 
 export type IKeyData<Key extends string> = IKeyValueMap<any> & {
@@ -13,33 +13,43 @@ export class KeyDataMapStore<
   DataKey extends string,
   SourceData extends IKeyData<DataKey>,
   TargetData extends IKeyData<DataKey> = SourceData,
-  > extends CommonStore {
+> extends CommonStore {
 
   @observable
-  protected sourceMap: ObservableMap<string, SourceData> = observable.map(new Map(), { deep: false })
+  public sourceMap: ObservableMap<string, SourceData> = observable.map(new Map(), { deep: false })
 
   @observable
   @readonly
   protected readonly targetMap: ObservableMap<string, TargetData> = observable.map({}, { deep: false })
 
-  @computed.struct
+  @computed
   public get sourceData(): IKeyValueMap<SourceData> {
+    // console.log('sourceData', this);
+    
     // const c = toJS(this.sourceMap.toPOJO())
     // return forEach(c, (value, key) => {
     //   c[key] = toJS(value)
     // })
-    return toJS(this.sourceMap.toPOJO())
+    // toJS(this.sourceMap.toPOJO())
+    return reduce(this.keyList, (obj, key) => {
+      const value = Utils.obsGet(this.sourceMap, key)
+      return assign(obj, {
+        [key]: toJS(value)
+      });
+    }, {})
   }
 
   public sourceDataSnapshot: IKeyValueMap<SourceData> = {};
 
   @computed.struct
   public get targetData(): IKeyValueMap<TargetData> {
+    // console.log('targetData', this);
     return toJS(this.targetMap.toJSON())
   }
 
   @computed.struct
   public get sourceValueList() {
+    // trace()
     return toJS(values(this.sourceMap))
   }
 
@@ -52,24 +62,33 @@ export class KeyDataMapStore<
     return toJS(values(this.targetMap))
   }
 
-  @computed.struct
-  public get itemCodeNameMap(): IKeyValueMap<string> {
-    return reduce(this.sourceMap, (obj, config) => {
-      return config.nameCode ? assign(obj, {
-        [config.code]: config.nameCode
-      }) : obj;
-    }, {})
-  }
-
-  @computed.struct
-  public get itemCodeNameList() {
-    return values(this.itemCodeNameMap)
-  }
-
-  @autobind
-  @readonly
+  @action
   public getSourceData(keyValue: string): SourceData {
     return this.sourceMap.get(keyValue)
+  }
+
+  @action reduce(callback: any, init: any) {
+    return reduce(this.sourceData, action(callback), init);
+  }
+
+  @action 
+  public mapValueWithSource<VT = any>(valueKey: string, autoZip = false): IKeyValueMap<VT> {
+    const obj = {}
+    for (const key of this.keyList) {
+      const value = this.getSourceData(key)[valueKey]
+      if ((autoZip && value) || autoZip) {
+        obj[key] = value
+      }
+    }
+    return obj;
+  }
+
+  @action 
+  public mapValueWithTarget<VT = any>(valueKey: string, autoZip = false): IKeyValueMap<VT> {
+    return reduce(this.keyList, (obj, key) => {
+      const value = this.getTargetData(key)[valueKey]
+      return autoZip && value ? obj : assign(obj, { [key]: value })
+    }, {} as any);
   }
 
   @autobind
@@ -88,7 +107,6 @@ export class KeyDataMapStore<
     return config[this.keyName] = keyValue as (SourceData | TargetData)[DataKey]
   }
 
-  @action.bound
   @readonly
   public setSourceData(sourceData: SourceData[] | IKeyValueMap<SourceData>) {
     const { getConfigKey: getKey } = this;
@@ -113,6 +131,17 @@ export class KeyDataMapStore<
 
   constructor(public readonly keyName: DataKey, public transformer: IMapTransformer<DataKey, SourceData, TargetData>) {
     super()
+    this.registerDisposer(() => {
+      // console.error('registerDisposer', this);
+      for(const key of this.keyList) {
+        this.sourceMap.delete(key)
+      }
+      this.sourceMap.clear()
+      this.targetMap.clear()
+      this.transformer = null
+      this.sourceDataSnapshot = {}
+    })
+    
     this.intercept(this.sourceMap, listener => {
       // console.log(listener, 1)
       if (listener.type === 'add') {

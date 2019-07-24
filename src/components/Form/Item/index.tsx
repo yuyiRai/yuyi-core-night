@@ -1,41 +1,54 @@
 import * as React from 'react';
+import Loadable from 'react-loadable';
+import Utils from 'yuyi-core-utils';
 import { FormItemType, IItemTypeComponent, OFormItemCommon } from '../Interface/FormItem';
-import { CascaderItem } from './Cascader';
+import { useCascaderItem } from './CascaderItem';
 // import { IInputItemProps, ITextAreaItemProps } from './InputItem';
-import { CheckItem, SwitchItem } from './CheckItem';
-import { DatePickerItem, DateRangePickerItem } from './DateItem';
-import GroupItem from './GroupItem';
-import { InputItem, TextAreaItem } from './InputItem';
-import { InputNumberItem } from './NumberInputItem';
-import { RadioItem, RadioOneItem } from './RadioItem';
-import { SearchItem } from './Search';
-import { SelectTreeItem } from './SelectTreeItem';
-import { CustomItem } from './CustomItem';
+import { useCheckItem, useSwitchItem } from './CheckItem';
+import { useCustomItem } from './CustomItem';
+import { useDatePickerItem, useDateRangePickerItem } from './DateItem';
+import { useGroupItem } from './GroupItem';
+import { useInputItem, useTextAreaItem } from './InputItem';
+import { useNumberInputItem } from './NumberInputItem';
+import { useRadioItem, useRadioOneItem } from './RadioItem';
+import { useSearchItem } from './Search';
+import { useSelectTreeItem } from './SelectTreeItem';
+
+
+export const Loader = (loader: Loadable.Options<any, any>['loader']) => {
+  return Loadable({
+    loader,
+    delay: 200,
+    loading: () => <span>loading</span>
+  });
+}
 
 // export function ItemSwitchType(type?: 'text' | string): React.FunctionComponent<IInputItemProps>;
 // export function ItemSwitchType(type: 'textArea' | 'textarea'): React.FunctionComponent<ITextAreaItemProps>;
 // export function ItemSwitchType(type: 'date' | 'dateTime'): React.FunctionComponent<IDatePickerItemProps>;
 // export function ItemSwitchType(type: 'dateToDate'): React.FunctionComponent<IDateRangePickerItemmProps>;
 export const itemType: IItemTypeComponent = {
-  'text': InputItem,
-  'textArea': TextAreaItem,
-  'textarea': TextAreaItem,
-  'date': DatePickerItem,
-  'dateTime': DatePickerItem,
-  'dateToDate': DateRangePickerItem,
-  'check': CheckItem,
-  'checkOne': SwitchItem,
-  'switch': SwitchItem,
-  'radio': RadioItem,
-  'radioOne': RadioOneItem,
-  'number': InputNumberItem,
-  'search': SearchItem,
-  'select': SearchItem,
-  'cascader': CascaderItem,
-  'selectTree': SelectTreeItem,
-  'group': GroupItem,
-  'custom': CustomItem
+  'text': useInputItem,
+  'textArea': useTextAreaItem,
+  'textarea': useTextAreaItem,
+  'date': useDatePickerItem,
+  'dateTime': useDatePickerItem,
+  'dateToDate': useDateRangePickerItem,
+  'check': useCheckItem,
+  'checkOne': useSwitchItem,
+  'switch': useSwitchItem,
+  'radio': useRadioItem,
+  'radioOne': useRadioOneItem,
+  'number': useNumberInputItem,
+  'search': useSearchItem,
+  'select': useSearchItem,
+  'cascader': useCascaderItem,
+  'selectTree': useSelectTreeItem,
+  'group': useGroupItem,
+  'custom': useCustomItem
 }
+
+window.Utils = Utils
 
 export function ItemSwitchType<T extends FormItemType>(type: T): IItemTypeComponent[T]
 export function ItemSwitchType<T extends FormItemType>(type?: never | ""): IItemTypeComponent['text']
@@ -46,10 +59,29 @@ export interface IItemSwitchProps extends OFormItemCommon {
   type: FormItemType;
   [k: string]: any;
 }
-export const ItemSwitch = React.forwardRef(({type, ...props}: IItemSwitchProps, ref) => {
-  const Component = React.useMemo(() => ItemSwitchType(type), [type]);
-  return <Component ref={ref} {...props}/>
+
+export function checkItemSwitch(type: FormItemType) {
+  const Component = ItemSwitchType(type)
+  return Component
+}
+
+export const isUseHooks = Utils.reduceMap(itemType, (value, key) => ({ [key]: checkItemSwitch(key) }) )
+
+export function useItemSwitch(type: FormItemType, props: OFormItemCommon, ref: React.Ref<any>) {
+  const Component = React.useMemo(() => isUseHooks[type] || checkItemSwitch(type), [type]);
+  React.useDebugValue(type, type => 'FormItemSwitch:' + type)
+  // useLog('component', type)
+  return Component(props, ref)
+}
+
+export const ItemSwitch = React.forwardRef(({ type, itemConfig, ...props }: IItemSwitchProps, ref) => {
+  return useItemSwitch(type, props, ref)
 })
+
+// export const ItemComponent = () => {
+
+//   return <ItemSwitch type={itemConfig.type} code={code} disabled={itemConfig.displayProps.isDisabled} placeholder={itemConfig.placeholder} />
+// }
 
 export * from './DateItem';
 export * from './InputItem';
